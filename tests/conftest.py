@@ -79,7 +79,8 @@ class FakePlayer:
 class FakeAmp:
     def __init__(self, volume: int = 30, max_volume: int = 63) -> None:
         self._volume = volume
-        self._max = max_volume
+        self._configured_max = max_volume
+        self._max_volume = max_volume
         self.enabled = False
         self.enable_calls: list[bool] = []
 
@@ -93,10 +94,24 @@ class FakeAmp:
 
     @property
     def max_volume(self) -> int:
-        return self._max
+        return self._max_volume
+
+    @property
+    def configured_max_volume(self) -> int:
+        return self._configured_max
+
+    def set_max_volume(self, value: int) -> int:
+        self._max_volume = max(0, min(63, int(value)))
+        self._volume = min(self._volume, self._max_volume)
+        return self._max_volume
+
+    def configure_cap(self, value: int) -> None:
+        """Test hook: set the cap as though it had come from config."""
+        self._configured_max = value
+        self.set_max_volume(value)
 
     def set_volume(self, value: int) -> int:
-        self._volume = max(0, min(self._max, int(value)))
+        self._volume = max(0, min(self._max_volume, int(value)))
         return self._volume
 
     def set_enabled(self, enabled: bool) -> None:

@@ -90,18 +90,25 @@
   }
 
   let volume = 0;
-  let volumeMax = 63;
+  let volumeMax = 63;   // what the amp will currently accept
+  let volumeCap = 63;   // the configured cap, which the question can lift
+  let uncapped = false;
   let volumeDirty = false; // suppress polled values while the user is dragging
 
   function paintVolume() {
     setField("volume", String(volume).padStart(2, "0"));
     setField("volume-max", String(volumeMax));
-    setField("volume-ceiling-label", volumeMax < 63 ? `capped ${volumeMax}` : "max 63");
+    setField(
+      "volume-ceiling-label",
+      volumeMax < 63 ? `capped ${volumeMax}` : uncapped ? "uncapped 63" : "max 63",
+    );
     volbar.setAttribute("aria-valuenow", String(volume));
     volbar.setAttribute("aria-valuemax", String(volumeMax));
     segments.forEach((seg, i) => {
       seg.classList.toggle("is-on", i < volume);
       seg.classList.toggle("is-over", i >= volumeMax);
+      // Once the ceiling is lifted, keep showing where it used to be.
+      seg.classList.toggle("is-past-cap", i >= volumeCap && i < volumeMax);
     });
   }
 
@@ -136,7 +143,11 @@
 
   volbar.addEventListener("pointerdown", (event) => {
     volbar.setPointerCapture(event.pointerId);
-    requestVolume(volumeFromEvent(event));
+    const wanted = volumeFromEvent(event);
+    // Reaching for the red segments is the natural way to ask for the cap
+    // to come off, so treat it as the question being requested.
+    if (wanted > volumeMax) openGate();
+    requestVolume(wanted);
   });
   volbar.addEventListener("pointermove", (event) => {
     if (event.buttons) requestVolume(volumeFromEvent(event));
@@ -268,8 +279,11 @@
       state.amp_online ? "Online" : "No I2C");
 
     volumeMax = state.volume_max;
+    volumeCap = state.volume_cap;
+    uncapped = state.uncapped;
     if (!volumeDirty) { volume = state.volume; }
     paintVolume();
+    paintGate();
 
     state.jobs = state.jobs.filter((job) => !dismissed.has(job.id));
     renderClips(state);
@@ -357,7 +371,119 @@
         sayForm.requestSubmit();
       }
     });
+
+    /* Cycle Rocky's own lines through the placeholder. Shuffled rather than
+       picked at random each time, so the same line does not come up twice in
+       a row. */
+    const lineSource = document.getElementById("rocky-lines");
+    let lines = [];
+    try {
+      lines = JSON.parse(lineSource.textContent);
+    } catch {
+      lines = [];
+    }
+
+    if (lines.length) {
+      let bag = [];
+      const nextLine = () => {
+        if (!bag.length) {
+          bag = lines.slice();
+          for (let i = bag.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [bag[i], bag[j]] = [bag[j], bag[i]];
+          }
+        }
+        return bag.pop();
+      };
+
+      sayText.placeholder = nextLine();
+      // Only rotate while the field is untouched, so it never moves under
+      // someone who is reading it or typing.
+      setInterval(() => {
+        if (!sayText.value && document.activeElement !== sayText) {
+          sayText.placeholder = nextLine();
+        }
+      }, 7000);
+
+      $("#say-quote").addEventListener("click", () => {
+        sayText.value = sayText.placeholder;
+        sayText.focus();
+        sayText.setSelectionRange(sayText.value.length, sayText.value.length);
+      });
+    }
   }
+
+  /* ---------------- the ceiling gate ---------------- */
+  const gate = $("#gate");
+  const gateAsk = $("#gate-ask");
+  const gateAnswer = $("#gate-answer");
+  const gateNote = $("#gate-note");
+  const gateLifted = $("#gate-lifted");
+  const uncapOpen = $("#uncap-open");
+
+  function paintGate() {
+    if (uncapped) {
+      uncapOpen.hidden = true;
+      gateAsk.hidden = true;
+      gateLifted.hidden = false;
+      return;
+    }
+    gateLifted.hidden = true;
+    // Leave the question up if it is already open and being answered.
+    if (gateAsk.hidden) uncapOpen.hidden = false;
+  }
+
+  function openGate() {
+    if (uncapped) return;
+    uncapOpen.hidden = true;
+    gateAsk.hidden = false;
+    gateNote.hidden = true;
+    gateAnswer.focus();
+  }
+
+  function closeGate() {
+    gateAsk.hidden = true;
+    gateNote.hidden = true;
+    gateAnswer.value = "";
+    paintGate();
+  }
+
+  uncapOpen.addEventListener("click", openGate);
+  $("#gate-cancel").addEventListener("click", closeGate);
+
+  gateAsk.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      const result = await api("/api/uncap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer: gateAnswer.value }),
+      });
+      uncapped = true;
+      volumeMax = result.volume_max;
+      closeGate();
+      paintVolume();
+      say("Ceiling lifted. Mind the speaker.", true);
+    } catch (err) {
+      gateNote.textContent = err.message;
+      gateNote.hidden = false;
+      gateAnswer.select();
+    }
+  });
+
+  $("#recap").addEventListener("click", async () => {
+    try {
+      const result = await api("/api/recap", { method: "POST" });
+      uncapped = false;
+      volumeMax = result.volume_max;
+      volume = result.volume;
+      paintVolume();
+      paintGate();
+      say("Cap restored.", true);
+    } catch (err) {
+      say(err.message);
+    }
+  });
 
   /* ---------------- manual controls ---------------- */
   $("#trigger").addEventListener("click", async () => {

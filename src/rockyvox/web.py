@@ -15,7 +15,9 @@ from flask import Flask, jsonify, render_template, request
 from .amp import VOLUME_MAX, Amplifier
 from .config import Config
 from .controller import Controller
+from .gate import UNCAP_QUESTION, answer_is_correct
 from .library import ClipError, Library
+from .quotes import ROCKY_LINES
 from .speech import VOICES, SpeechError
 from .speech import available as speech_available
 
@@ -45,7 +47,9 @@ def create_app(
             "magnet_present": controller.magnet_present,
             "volume": amp.volume,
             "volume_max": amp.max_volume,
+            "volume_cap": amp.configured_max_volume,
             "volume_ceiling": VOLUME_MAX,
+            "uncapped": amp.max_volume > amp.configured_max_volume,
             "amp_online": amp.online,
             "clips": [_clip_json(c) for c in clips],
             "jobs": [
@@ -69,6 +73,8 @@ def create_app(
             accept=",".join(config.allowed_extensions),
             voices=list(VOICES.values()),
             speech_available=speech_available(),
+            uncap_question=UNCAP_QUESTION,
+            rocky_lines=list(ROCKY_LINES),
         )
 
     @app.get("/api/state")
@@ -153,6 +159,30 @@ def create_app(
             return jsonify({"error": "expected {'value': 0-63}"}), 400
         applied = amp.set_volume(requested)
         return jsonify({"volume": applied, "amp_online": amp.online})
+
+    @app.post("/api/uncap")
+    def api_uncap():
+        """Lift the volume ceiling, if the caller can answer the question."""
+        if amp.max_volume >= VOLUME_MAX:
+            return jsonify({"uncapped": True, "volume_max": amp.max_volume})
+
+        payload = request.get_json(silent=True) or {}
+        if not answer_is_correct(payload.get("answer")):
+            return jsonify({"error": "Incorrect.", "question": UNCAP_QUESTION}), 403
+
+        applied = amp.set_max_volume(VOLUME_MAX)
+        log.warning(
+            "volume ceiling lifted from %d to %d; the speaker is now the only limit",
+            amp.configured_max_volume,
+            applied,
+        )
+        return jsonify({"uncapped": True, "volume_max": applied})
+
+    @app.post("/api/recap")
+    def api_recap():
+        """Put the configured ceiling back."""
+        applied = amp.set_max_volume(amp.configured_max_volume)
+        return jsonify({"uncapped": False, "volume_max": applied, "volume": amp.volume})
 
     @app.errorhandler(413)
     def api_too_large(_exc):

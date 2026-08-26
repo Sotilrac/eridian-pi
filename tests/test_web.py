@@ -80,7 +80,7 @@ def test_volume_is_applied_to_the_amp(client, amp):
 
 
 def test_volume_is_clamped_to_the_configured_ceiling(client, amp):
-    amp._max = 45
+    amp.configure_cap(45)
     assert client.post("/api/volume", json={"value": 63}).get_json()["volume"] == 45
 
 
@@ -263,3 +263,71 @@ def test_playing_and_current_never_disagree(client, seeded, player):
     for _ in range(20):
         body = client.get("/api/state").get_json()
         assert body["playing"] == (body["current"] is not None)
+
+
+# -- the volume ceiling ------------------------------------------------
+
+
+def test_the_ceiling_holds_until_the_question_is_answered(client, amp):
+    amp.configure_cap(45)
+
+    body = client.get("/api/state").get_json()
+    assert body["volume_max"] == 45
+    assert body["volume_cap"] == 45
+    assert body["uncapped"] is False
+    assert client.post("/api/volume", json={"value": 63}).get_json()["volume"] == 45
+
+
+@pytest.mark.parametrize("answer", ["four", "4", " Four. "])
+def test_the_right_answer_lifts_the_ceiling(client, amp, answer):
+    amp.configure_cap(45)
+
+    response = client.post("/api/uncap", json={"answer": answer})
+    assert response.status_code == 200
+    assert response.get_json()["volume_max"] == 63
+
+    assert client.post("/api/volume", json={"value": 63}).get_json()["volume"] == 63
+    assert client.get("/api/state").get_json()["uncapped"] is True
+
+
+@pytest.mark.parametrize("answer", ["five", "", "2+2", None])
+def test_a_wrong_answer_leaves_the_ceiling_alone(client, amp, answer):
+    amp.configure_cap(45)
+
+    response = client.post("/api/uncap", json={"answer": answer})
+    assert response.status_code == 403
+    assert response.get_json()["error"] == "Incorrect."
+    assert response.get_json()["question"] == "What's two plus two?"
+    assert amp.max_volume == 45
+
+
+def test_recap_restores_the_ceiling_and_pulls_the_level_down(client, amp):
+    amp.configure_cap(45)
+
+    client.post("/api/uncap", json={"answer": "four"})
+    client.post("/api/volume", json={"value": 60})
+
+    body = client.post("/api/recap").get_json()
+    assert body["uncapped"] is False
+    assert body["volume_max"] == 45
+    assert body["volume"] == 45, "a level above the restored cap must come down"
+
+
+def test_uncapping_an_already_uncapped_amp_needs_no_answer(client, amp):
+    amp.configure_cap(63)
+    assert client.post("/api/uncap", json={}).status_code == 200
+
+
+def test_the_page_carries_the_uncap_question(client):
+    assert b"two plus two" in client.get("/").data
+
+
+def test_the_page_carries_rocky_lines_for_the_placeholder(
+    config, library, controller, amp, monkeypatch
+):
+    # The lines only render alongside the synthesiser they seed.
+    monkeypatch.setattr("rockyvox.speech.shutil.which", lambda _n: "/usr/bin/espeak-ng")
+    app = create_app(config=config, library=library, controller=controller, amp=amp)
+    body = app.test_client().get("/").data
+    assert b'id="rocky-lines"' in body
+    assert b"Fist my bump." in body

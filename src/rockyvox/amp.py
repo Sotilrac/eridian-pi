@@ -26,6 +26,14 @@ class Amplifier(Protocol):
     @property
     def volume(self) -> int: ...
 
+    @property
+    def max_volume(self) -> int: ...
+
+    @property
+    def configured_max_volume(self) -> int: ...
+
+    def set_max_volume(self, value: int) -> int: ...
+
     def set_volume(self, value: int) -> int: ...
 
     def set_enabled(self, enabled: bool) -> None: ...
@@ -47,7 +55,10 @@ class Max9744:
     ) -> None:
         self._address = address
         self._bus_number = bus
-        self._max_volume = max(VOLUME_MIN, min(VOLUME_MAX, max_volume))
+        #: The cap from config, and the cap currently in force. They differ
+        #: only while the ceiling has been deliberately lifted.
+        self._configured_max = max(VOLUME_MIN, min(VOLUME_MAX, max_volume))
+        self._max_volume = self._configured_max
         self._lock = threading.Lock()
         self._volume = self._clamp(initial_volume)
         self._online = False
@@ -96,6 +107,21 @@ class Max9744:
     def max_volume(self) -> int:
         return self._max_volume
 
+    @property
+    def configured_max_volume(self) -> int:
+        return self._configured_max
+
+    def set_max_volume(self, value: int) -> int:
+        """Raise or lower the ceiling, pulling the level down if it now exceeds it.
+
+        Deliberately not persisted: the cap is there to keep a 10W speaker
+        alive on a 20W amplifier, so lifting it should not outlive a reboot.
+        """
+        self._max_volume = max(VOLUME_MIN, min(VOLUME_MAX, int(value)))
+        if self._volume > self._max_volume:
+            self.set_volume(self._max_volume)
+        return self._max_volume
+
     def _clamp(self, value: int) -> int:
         return max(VOLUME_MIN, min(self._max_volume, int(value)))
 
@@ -139,6 +165,7 @@ class NullAmplifier:
     """Stand-in used on machines with no I2C, and in tests."""
 
     def __init__(self, initial_volume: int = 30, max_volume: int = VOLUME_MAX) -> None:
+        self._configured_max = max_volume
         self._max_volume = max_volume
         self._volume = min(initial_volume, max_volume)
         self.enabled = False
@@ -153,6 +180,15 @@ class NullAmplifier:
 
     @property
     def max_volume(self) -> int:
+        return self._max_volume
+
+    @property
+    def configured_max_volume(self) -> int:
+        return self._configured_max
+
+    def set_max_volume(self, value: int) -> int:
+        self._max_volume = max(VOLUME_MIN, min(VOLUME_MAX, int(value)))
+        self._volume = min(self._volume, self._max_volume)
         return self._max_volume
 
     def set_volume(self, value: int) -> int:

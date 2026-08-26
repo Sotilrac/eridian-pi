@@ -55,10 +55,14 @@
     <section class="panel panel--say">
       <h2 class="panel__title">Synthesize</h2>
       {% if speech_available %}
+      <script type="application/json" id="rocky-lines">{{ rocky_lines|tojson }}</script>
       <form class="say" id="say">
-        <label class="say__label" for="say-text">Translator input</label>
+        <div class="say__head">
+          <label class="say__label" for="say-text">Translator input</label>
+          <button type="button" class="linkish say__quote" id="say-quote">use this line</button>
+        </div>
         <textarea id="say-text" name="text" rows="3" maxlength="1000"
-                  placeholder="Question, Rocky. Are you amazed?"></textarea>
+                  placeholder="Fist my bump."></textarea>
         <div class="say__row">
           <label class="say__label" for="say-voice">Voice</label>
           <select id="say-voice" name="voice">
@@ -88,6 +92,28 @@
         <div class="vol__bar" id="volbar" role="slider" tabindex="0"
              aria-label="Amplifier volume" aria-valuemin="0" aria-valuemax="63" aria-valuenow="0"></div>
         <div class="vol__ends"><span>Mute</span><span data-field="volume-ceiling-label">Ceiling</span></div>
+
+        <div class="gate" id="gate">
+          <button type="button" class="btn btn--tight" id="uncap-open">Lift ceiling</button>
+
+          <form class="gate__ask" id="gate-ask" hidden>
+            <label class="say__label" for="gate-answer">{{ uncap_question }}</label>
+            <div class="gate__row">
+              <input type="text" id="gate-answer" autocomplete="off" spellcheck="false"
+                     aria-describedby="gate-note">
+              <button type="submit" class="btn btn--tight">Answer</button>
+              <button type="button" class="btn btn--tight" id="gate-cancel">Cancel</button>
+            </div>
+            <p class="gate__note" id="gate-note" hidden></p>
+          </form>
+
+          <div class="gate__lifted" id="gate-lifted" hidden>
+            <p class="gate__warn">
+              Ceiling lifted. The amp can now drive the speaker past its rating.
+            </p>
+            <button type="button" class="btn btn--tight btn--alert" id="recap">Restore cap</button>
+          </div>
+        </div>
       </div>
 
       <h2 class="panel__title">Manual override</h2>
