@@ -217,9 +217,36 @@ barrel-jack supply and tie its ground to the Pi's.
 the speaker is rated for 10W. At 9V full scale lands near the speaker's
 rating instead. Two further guards, both worth keeping:
 
-- the board's onboard trim pot sets an analog gain ceiling — back it off
-  until the loudest clip is as loud as you ever want it
 - `max_volume` in the config caps the digital side (45 of 63 by default)
+- run the amp at 9V rather than 12V, as above
+
+**Do not fit the bundled 1kΩ potentiometer.** The board ships in digital
+(I2C) mode. Fitting the pot means closing the `Analog`, `AD1` and `AD2`
+solder jumpers, which switches the board to analog mode and disables I2C
+volume control entirely — the one thing this project relies on for volume.
+
+## The amp is silent until something sets its volume
+
+Worth knowing before you spend an evening on it. In digital mode the
+MAX9744 powers up at its **lowest volume setting** and stays there. Adafruit
+says so plainly: "When you power up the amplifier and feed in audio you
+won't hear anything! This is normal!"
+
+So a correctly wired amp with a good source sounds exactly like a broken
+one: the class-D output stage idles and hisses through the speaker, and no
+audio passes. Nothing is wrong. Until an I2C master writes a volume byte to
+`0x4B`, there is no gain.
+
+This bites hardest on the bench, where the amp is often powered with no Pi
+attached. Before suspecting the source, the cable or the speaker:
+
+```sh
+make i2c-scan          # 0x4b must appear in the grid
+make volume V=40       # write a volume byte
+```
+
+If `0x4b` does not appear, no volume byte can ever land, and the amp will
+stay silent no matter how good the audio feeding it is.
 
 ## PCM5102A jumpers
 
@@ -278,9 +305,10 @@ make volume V=45   # audibly louder
 | `0x4b` missing but the bus scans | amp unpowered, or `Vi2c` not on 3V3 |
 | No card in `aplay -l` | wrong `AUDIO=` backend, or no reboot yet |
 | No USB card with `AUDIO=usb` | port still in gadget mode, or no OTG adapter |
-| Card present, no sound | `SCK` floating on the DAC; or `SHDN` held low |
+| Card present, no sound | amp volume never set over I2C (see above); `SCK` floating on the DAC; or `SHDN` held low |
+| Amp hisses but passes no audio | classic never-set-volume symptom: `make i2c-scan`, then `make volume V=40` |
 | Hiss between clips | wire `SHDN` to GPIO27 and set `shutdown_pin` |
-| Distortion at high volume | lower `max_volume`, back off the trim pot, use 9V |
+| Distortion at high volume | lower `max_volume`, use 9V not 12V |
 | Talks when seated, quiet when lifted | set `magnet_present_is_low = false` |
 | Never triggers | flip the magnet over (unipolar sensors need one pole) |
 | Retriggers on a knock | raise `bounce_seconds` |
