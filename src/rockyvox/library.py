@@ -31,6 +31,16 @@ DEFAULT_CLIP_ID = "default"
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _FFMPEG_TIMEOUT = 600
 _LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"
+#: Sum both channels into both outputs. The figurine has one speaker on one
+#: amplifier channel, so a true stereo clip would otherwise lose everything
+#: panned right. aformat first, because a mono source (espeak-ng output, for
+#: one) has no c1 for the pan to reference.
+_MONO_SUM = "aformat=channel_layouts=stereo,pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1"
+
+
+def _filter_chain(mono: bool) -> str:
+    """Downmix before normalising, so loudnorm targets what is actually heard."""
+    return f"{_MONO_SUM},{_LOUDNORM}" if mono else _LOUDNORM
 
 
 class ClipError(Exception):
@@ -76,12 +86,14 @@ class Library:
         default_dir: Path,
         allowed_extensions: tuple[str, ...],
         max_clip_seconds: float = 300.0,
+        mono_output: bool = True,
         on_change: Callable[[], None] | None = None,
     ) -> None:
         self.clips_dir = Path(clips_dir)
         self.default_dir = Path(default_dir)
         self.allowed_extensions = tuple(e.lower() for e in allowed_extensions)
         self.max_clip_seconds = max_clip_seconds
+        self.mono_output = mono_output
         self._on_change = on_change
         self._lock = threading.Lock()
         self._jobs: dict[str, Job] = {}
@@ -278,7 +290,7 @@ class Library:
                     str(source),
                     "-vn",
                     "-af",
-                    _LOUDNORM,
+                    _filter_chain(self.mono_output),
                     "-ar",
                     "44100",
                     "-ac",
@@ -296,6 +308,9 @@ class Library:
             if result.returncode != 0:
                 raise ClipError(_last_ffmpeg_error(result.stderr))
             tmp_path.replace(target)
+            # NamedTemporaryFile creates at 0600; clips are not secrets and
+            # this keeps them readable if the service user ever changes.
+            target.chmod(0o644)
         except subprocess.TimeoutExpired as exc:
             raise ClipError("transcode timed out") from exc
         finally:
@@ -382,11 +397,21 @@ def _last_ffmpeg_error(stderr: str) -> str:
     return lines[-1][:200] if lines else "transcode failed"
 
 
-def install_default_clip(source: Path, default_dir: Path) -> Path:
+def install_default_clip(source: Path, default_dir: Path, mono_output: bool = True) -> Path:
     """Transcode the shipped default clip into ``default_dir``. Idempotent."""
     default_dir.mkdir(parents=True, exist_ok=True)
     target = default_dir / f"{source.stem}.wav"
-    if target.exists() and target.stat().st_mtime >= source.stat().st_mtime:
+    # Record the filter chain alongside the result. Without it, flipping
+    # mono_output leaves the built-in clip mixed the old way for ever, since
+    # the source file has not changed.
+    recipe = _filter_chain(mono_output)
+    stamp = default_dir / ".recipe"
+    if (
+        target.exists()
+        and target.stat().st_mtime >= source.stat().st_mtime
+        and stamp.exists()
+        and stamp.read_text() == recipe
+    ):
         return target
     with tempfile.NamedTemporaryFile(suffix=".wav", dir=default_dir, delete=False) as tmp:
         tmp_path = Path(tmp.name)
@@ -400,7 +425,7 @@ def install_default_clip(source: Path, default_dir: Path) -> Path:
                 str(source),
                 "-vn",
                 "-af",
-                _LOUDNORM,
+                _filter_chain(mono_output),
                 "-ar",
                 "44100",
                 "-ac",
@@ -418,6 +443,8 @@ def install_default_clip(source: Path, default_dir: Path) -> Path:
         if result.returncode != 0:
             raise ClipError(_last_ffmpeg_error(result.stderr))
         shutil.move(str(tmp_path), target)
+        target.chmod(0o644)
+        stamp.write_text(recipe)
     finally:
         tmp_path.unlink(missing_ok=True)
     return target

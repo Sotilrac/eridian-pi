@@ -58,7 +58,7 @@ Not on the header, because it does not touch the Pi:
 |---|---|---|
 | PCM5102A `LOUT` / `ROUT` / `AGND` | MAX9744 input (3.5mm jack or `L` / `R` / `GND`) | the audio itself |
 | 9V PSU | MAX9744 barrel jack | amp power, **never the Pi's 5V rail** |
-| MAX9744 `L+` / `L-` | 4Ω speaker | the one channel that is used |
+| MAX9744 `L+` / `L-` | 4Ω speaker | either channel carries the full mix, see below |
 
 ### Grounds
 
@@ -69,6 +69,18 @@ the result is hum, hiss, or nothing at all.
 
 The audio cable's sleeve is a second path between the DAC and the amp. At
 this scale that is harmless, so there is no need to lift it.
+
+### One speaker, both channels
+
+The amp is stereo and the figurine has one speaker, so clips are summed to
+mono at ingest and written to both channels. Either amplifier output then
+carries the whole mix. Without that, everything panned right in a stereo clip
+would be wired to a speaker that does not exist.
+
+Wire a second speaker to `R+` / `R-` and set `mono_output = false` in
+`/etc/rocky/config.toml` to get the stereo image back. Re-run `make provision`
+afterwards: the built-in clip is re-mixed to match, and anything already
+uploaded needs uploading again.
 
 ### The optional SHDN wire
 

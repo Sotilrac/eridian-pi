@@ -19,6 +19,11 @@ bounce_seconds = 0.05
 # Pause between repeats of the same clip while the figurine stays lifted.
 repeat_gap_seconds = 1.0
 alsa_device = "default"
+# The figurine drives one speaker from one amplifier channel, so left and
+# right are summed into both channels at ingest. Without this, anything
+# panned right in a stereo clip is simply never heard. Set false only if a
+# second speaker is wired to the amp's other channel.
+mono_output = true
 
 # --- MAX9744 amplifier -----------------------------------------------
 i2c_bus = 1

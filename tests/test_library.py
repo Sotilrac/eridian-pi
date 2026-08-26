@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 import time
 import wave
 from pathlib import Path
@@ -221,3 +222,114 @@ def test_metadata_pointing_at_a_missing_wav_is_skipped(library, tone):
     clip = library.clips()[0]
     Path(clip.path).unlink()
     assert library.clips() == []
+
+
+# -- one speaker, one channel ------------------------------------------
+
+
+def stereo_tone(tmp_path: Path, left: int, right: int) -> Path:
+    """A clip with a different tone hard-panned to each channel."""
+    path = tmp_path / f"panned-{left}-{right}.wav"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency={left}:duration=1",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency={right}:duration=1",
+            "-filter_complex",
+            "[0:a][1:a]join=inputs=2:channel_layout=stereo[out]",
+            "-map",
+            "[out]",
+            "-c:a",
+            "pcm_s16le",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    return path
+
+
+def channels_of(path: Path) -> tuple[bytes, bytes]:
+    with wave.open(str(path), "rb") as handle:
+        assert handle.getnchannels() == 2
+        frames = handle.readframes(handle.getnframes())
+    return frames[0::4] + frames[1::4], frames[2::4] + frames[3::4]
+
+
+def test_a_stereo_clip_is_summed_so_one_speaker_hears_everything(library, tmp_path):
+    # Rocky has a single speaker on a single amplifier channel. Without the
+    # downmix, everything panned right would simply never be heard.
+    source = stereo_tone(tmp_path, 300, 900)
+    job = library.submit(source, "panned.wav")
+    assert wait_for(lambda: job.status != "processing")
+    assert job.status == "ready", job.error
+
+    left, right = channels_of(library.clips()[0].path)
+    assert left == right, "the two channels must carry the same summed mix"
+    assert set(left) != {0}, "and it must not be silence"
+
+
+def test_mono_output_can_be_turned_off_for_a_second_speaker(tmp_path):
+    lib = Library(
+        clips_dir=tmp_path / "clips",
+        default_dir=tmp_path / "default",
+        allowed_extensions=EXTENSIONS,
+        mono_output=False,
+    )
+    try:
+        source = stereo_tone(tmp_path, 300, 900)
+        job = lib.submit(source, "panned.wav")
+        assert wait_for(lambda: job.status != "processing")
+        assert job.status == "ready", job.error
+
+        left, right = channels_of(lib.clips()[0].path)
+        assert left != right, "stereo separation should survive"
+    finally:
+        lib.close()
+
+
+def test_a_mono_source_survives_the_downmix(library, tone, tmp_path):
+    # espeak-ng emits mono, which has no right channel for the pan to sum.
+    mono = tmp_path / "mono.wav"
+    subprocess.run(
+        ["ffmpeg", "-nostdin", "-y", "-i", str(tone), "-ac", "1", str(mono)],
+        check=True,
+        capture_output=True,
+    )
+    job = library.submit(mono, "mono.wav")
+    assert wait_for(lambda: job.status != "processing")
+    assert job.status == "ready", job.error
+
+    left, right = channels_of(library.clips()[0].path)
+    assert left == right
+    assert set(left) != {0}
+
+
+def test_changing_the_mix_re_transcodes_the_built_in_clip(library, tone):
+    # The source never changes, so an mtime check alone would leave the
+    # built-in clip mixed the old way for ever.
+    install_default_clip(tone, library.default_dir, mono_output=True)
+    first = library.default_clip().path.stat().st_mtime_ns
+
+    install_default_clip(tone, library.default_dir, mono_output=False)
+    assert library.default_clip().path.stat().st_mtime_ns != first
+
+    stable = library.default_clip().path.stat().st_mtime_ns
+    install_default_clip(tone, library.default_dir, mono_output=False)
+    assert library.default_clip().path.stat().st_mtime_ns == stable
+
+
+def test_clips_are_written_world_readable(library, tone):
+    ingest(library, tone)
+    assert library.clips()[0].path.stat().st_mode & 0o777 == 0o644
+
+    install_default_clip(tone, library.default_dir)
+    assert library.default_clip().path.stat().st_mode & 0o777 == 0o644

@@ -27,6 +27,10 @@ class Config:
     #: Gap between repeats of the same clip while the magnet stays away.
     repeat_gap_seconds: float = 1.0
     alsa_device: str = "default"
+    #: Sum left and right into both channels at ingest. The figurine drives a
+    #: single speaker from one amplifier channel, so without this anything
+    #: panned right is lost. Set false only if a second speaker is wired.
+    mono_output: bool = True
 
     # --- MAX9744 amplifier ---------------------------------------------
     i2c_bus: int = 1

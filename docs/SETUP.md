@@ -122,6 +122,7 @@ survive a re-run. The ones worth knowing:
 | `magnet_present_is_low` | `true` | flip if the trigger is inverted |
 | `bounce_seconds` | `0.05` | raise if a knock retriggers it |
 | `repeat_gap_seconds` | `1.0` | pause between repeats while lifted |
+| `mono_output` | `true` | sum L+R into both channels for a single speaker |
 | `max_volume` | `45` | ceiling on the amp's 0–63 scale |
 | `shutdown_pin` | unset | set to `27` once `SHDN` is wired |
 

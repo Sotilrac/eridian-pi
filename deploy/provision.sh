@@ -90,15 +90,21 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(sys.argv[1]) / "src"))
+from rockyvox.config import load_config  # noqa: E402
 from rockyvox.library import install_default_clip  # noqa: E402
 
 source = next(iter(sorted((Path(sys.argv[1]) / "media" / "default").glob("*"))), None)
 if source is None:
     raise SystemExit("no default clip found in media/default")
-target = install_default_clip(source, Path(sys.argv[2]) / "default")
+# Match whatever the installed config asks for, so the built-in clip is
+# mixed the same way as every upload.
+config = load_config(Path("/etc/rocky/config.toml"))
+target = install_default_clip(source, Path(sys.argv[2]) / "default", config.mono_output)
 print(f"    {source.name} -> {target}")
 PY
 chown -R "$RUN_USER:$RUN_USER" "$DATA_DIR"
+# Clips written before the 0644 change keep the 0600 that tempfile gave them.
+find "$DATA_DIR" -type f -name '*.wav' -exec chmod 0644 {} +
 
 # --- 7. service -------------------------------------------------------
 say "installing $SERVICE"
