@@ -221,9 +221,20 @@ rating instead. Two further guards, both worth keeping:
 - run the amp at 9V rather than 12V, as above
 
 **Do not fit the bundled 1kΩ potentiometer.** The board ships in digital
-(I2C) mode. Fitting the pot means closing the `Analog`, `AD1` and `AD2`
-solder jumpers, which switches the board to analog mode and disables I2C
-volume control entirely — the one thing this project relies on for volume.
+(I2C) mode. Analog mode means closing the `Analog`, `AD1` and `AD2` solder
+jumpers, which disables I2C volume control entirely — the one thing this
+project relies on for volume. In analog mode `amp.py`, the web volume
+slider, the `max_volume` cap and the uncapping gate all become no-ops.
+
+`AD1` and `AD2` double as the **I2C address select pins**. Leaving them
+open is what puts the amp at `0x4B`, which is the address `config.toml`
+and `make i2c-scan` expect.
+
+**Fitting the pot alone does nothing.** With the pot in place but the three
+jumpers open, the chip stays in digital mode, the pot is not connected to
+anything that sets gain, and the volume stays at minimum. Turning the knob
+has no effect. A board in this half-converted state looks and behaves
+exactly like a dead amp.
 
 ## The amp is silent until something sets its volume
 
