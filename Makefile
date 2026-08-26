@@ -54,9 +54,19 @@ clean: ## Remove build and cache artefacts
 
 # ---------------------------------------------------------------- deploy
 
+# A Zero W takes roughly eight seconds from restart to a bound port, so every
+# target that restarts the service waits for it rather than racing it.
+define wait_up
+$(SSH) 'for i in $$(seq 1 60); do \
+	  curl -fsS -o /dev/null http://127.0.0.1:$(PORT)/api/state 2>/dev/null && exit 0; \
+	  sleep 0.5; \
+	done; echo "service did not come up; try: make logs" >&2; exit 1'
+endef
+
 deploy: ## Push the code to the Pi and restart the service
 	$(RSYNC) --exclude '__pycache__' $(PAYLOAD) $(PI):$(APP_DIR)/
-	-$(SSH) 'sudo systemctl restart rocky-vox'
+	$(SSH) 'sudo systemctl restart rocky-vox'
+	@$(wait_up)
 	@echo "deployed to http://$$($(SSH) hostname).local:$(PORT)"
 
 provision: ## First-run setup on the Pi (packages, overlays, service)
@@ -64,8 +74,10 @@ provision: ## First-run setup on the Pi (packages, overlays, service)
 	$(RSYNC) --exclude '__pycache__' $(PAYLOAD) $(PI):$(APP_DIR)/
 	$(SSH) 'sudo $(APP_DIR)/deploy/provision.sh'
 
-restart: ## Restart the service
-	$(SSH) 'sudo systemctl restart rocky-vox && sleep 1 && systemctl is-active rocky-vox'
+restart: ## Restart the service and wait for it to answer
+	$(SSH) 'sudo systemctl restart rocky-vox'
+	@$(wait_up)
+	@echo "up"
 
 stop: ## Stop the service
 	$(SSH) 'sudo systemctl stop rocky-vox'

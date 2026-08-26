@@ -94,12 +94,10 @@ def main(argv: list[str] | None = None) -> int:
 
     clip_count = len(library.clips())
     log.info(
-        "%d clip%s loaded; magnet %s; serving on http://%s:%d",
+        "%d clip%s loaded; magnet %s",
         clip_count,
         "" if clip_count == 1 else "s",
         "present" if sensor.magnet_present else "absent",
-        config.host,
-        config.port,
     )
     if clip_count == 0:
         log.warning("no clips found; run 'make provision' to install the default clip")
@@ -118,9 +116,13 @@ def main(argv: list[str] | None = None) -> int:
 
     app = create_app(config=config, library=library, controller=controller, amp=amp)
 
-    from waitress import serve
+    from waitress import create_server
 
-    serve(app, host=config.host, port=config.port, threads=4, _quiet=True)
+    # create_server binds the socket; serve() would log "serving" a good eight
+    # seconds before the port actually answers on a Zero W.
+    server = create_server(app, host=config.host, port=config.port, threads=4)
+    log.info("listening on http://%s:%d", config.host, config.port)
+    server.run()
     return 0
 
 

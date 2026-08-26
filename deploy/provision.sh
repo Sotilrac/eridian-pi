@@ -119,5 +119,15 @@ if [[ $reboot_required -eq 1 ]]; then
 else
   say "starting $SERVICE"
   systemctl restart "$SERVICE"
-  say "listening on http://$(hostname).local:8080"
+  # Importing Flask and waitress takes the better part of ten seconds on a
+  # Zero W, so announce the URL only once the port actually answers.
+  for _ in $(seq 1 60); do
+    if curl -fsS -o /dev/null http://127.0.0.1:8080/api/state 2>/dev/null; then
+      say "listening on http://$(hostname).local:8080"
+      exit 0
+    fi
+    sleep 0.5
+  done
+  warn "$SERVICE did not answer within 30s; check: journalctl -u $SERVICE"
+  exit 1
 fi
