@@ -1,0 +1,437 @@
+/* Palette lifted from valhovey.github.io/gaia-mary */
+:root {
+  --bg: #05070a;
+  --fg: #cfe3f0;
+  --fg-dim: #5d7689;
+  --red: #e2402c;
+  --amber: #c9a227;
+
+  --line: rgba(93, 118, 137, 0.32);
+  --line-soft: rgba(93, 118, 137, 0.16);
+  --panel: rgba(207, 227, 240, 0.018);
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("jetbrains-mono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#starfield {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  display: block;
+}
+
+/* A faint receding grid, the way the star map lays its reference planes. */
+.grid-floor {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 46vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px 88px),
+    repeating-linear-gradient(0deg, var(--line-soft) 0 1px, transparent 1px 64px);
+  transform: perspective(340px) rotateX(74deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, #000 0%, transparent 82%);
+  opacity: 0.75;
+}
+
+main {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(20px, 5vw, 56px) clamp(16px, 4vw, 40px) 64px;
+}
+
+.sep { color: var(--fg-dim); }
+
+/* ---------- masthead ---------- */
+.masthead { margin-bottom: 28px; }
+
+.masthead h1 {
+  margin: 0;
+  font-size: clamp(20px, 4.2vw, 30px);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.masthead .sub {
+  margin: 6px 0 0;
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.masthead__rule {
+  margin-top: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line) 0%, var(--line) 62%, transparent 100%);
+}
+
+/* ---------- status strip ---------- */
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stat__label { color: var(--fg-dim); }
+.stat__value { color: var(--fg); }
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fg-dim);
+  box-shadow: 0 0 0 0 transparent;
+  flex: none;
+  transition: background 160ms linear, box-shadow 160ms linear;
+}
+
+.stat.is-live .dot,
+.stat.is-live .stat__value { color: var(--fg); }
+.stat.is-live .dot { background: var(--fg); box-shadow: 0 0 7px rgba(207, 227, 240, 0.55); }
+.stat.is-alert .dot { background: var(--red); box-shadow: 0 0 7px rgba(226, 64, 44, 0.6); }
+.stat.is-alert .stat__value { color: var(--red); }
+.stat.is-warm .dot { background: var(--amber); box-shadow: 0 0 7px rgba(201, 162, 39, 0.5); }
+
+/* ---------- panels ---------- */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .columns { grid-template-columns: minmax(0, 1fr); }
+}
+
+.panel {
+  position: relative;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* Corner brackets: two L-shapes pinned to opposite corners. */
+.panel::before, .panel::after {
+  content: "";
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--fg-dim);
+  pointer-events: none;
+}
+.panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.panel::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.panel__title {
+  margin: 0 0 14px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.panel__title + * { margin-top: 0; }
+.panel .panel__title:not(:first-child) { margin-top: 26px; }
+
+/* ---------- clip list ---------- */
+.clips { list-style: none; margin: 0; padding: 0; }
+
+.clip {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.clip:first-child { border-top: 1px solid var(--line-soft); }
+
+.clip__idx {
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clip__meta {
+  display: block;
+  color: var(--fg-dim);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.clip__acts { display: flex; gap: 6px; }
+
+.clip.is-playing .clip__name { color: var(--amber); }
+.clip.is-locked .clip__meta { color: var(--fg-dim); }
+.clip.is-pending .clip__name { color: var(--fg-dim); }
+.clip.is-failed .clip__name,
+.clip.is-failed .clip__meta { color: var(--red); }
+
+/* ---------- controls ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 140ms linear, color 140ms linear, background 140ms linear;
+}
+
+.btn:hover:not(:disabled) { border-color: var(--fg); background: rgba(207, 227, 240, 0.05); }
+.btn:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn--alert { color: var(--red); border-color: rgba(226, 64, 44, 0.45); }
+.btn--alert .dot { background: var(--red); }
+.btn--alert:hover:not(:disabled) { border-color: var(--red); background: rgba(226, 64, 44, 0.07); }
+
+.btn--tight { padding: 3px 8px; letter-spacing: 0.14em; }
+.btn--tight .dot { display: none; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.linkish {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- volume ---------- */
+.vol__readout {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.vol__value {
+  font-size: 30px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.vol__of { color: var(--fg-dim); font-size: 11px; letter-spacing: 0.16em; }
+
+/* 64 segments, one per hardware step. */
+.vol__bar {
+  display: grid;
+  grid-template-columns: repeat(64, minmax(0, 1fr));
+  gap: 1px;
+  height: 34px;
+  border: 1px solid var(--line);
+  padding: 4px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.vol__bar:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+
+.vol__seg { background: var(--line-soft); }
+.vol__seg.is-on { background: var(--fg); }
+.vol__seg.is-over { background: rgba(226, 64, 44, 0.35); }
+
+.vol__ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  color: var(--fg-dim);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ---------- dropzone ---------- */
+.drop {
+  margin-top: 20px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  transition: border-color 140ms linear, background 140ms linear;
+}
+
+.drop.is-over { border-color: var(--fg); background: rgba(207, 227, 240, 0.04); }
+
+.drop__inner { padding: 18px 16px; text-align: center; }
+.drop__cue { margin: 0; font-size: 11px; letter-spacing: 0.12em; }
+
+.drop__meta {
+  margin: 6px 0 0;
+  color: var(--fg-dim);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+/* ---------- misc ---------- */
+.empty, .hint {
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.hint { margin: 14px 0 0; line-height: 1.7; }
+
+.notice {
+  margin: 12px 0 0;
+  padding: 7px 10px;
+  border-left: 2px solid var(--red);
+  color: var(--red);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.notice.is-ok { border-left-color: var(--fg-dim); color: var(--fg-dim); }
+
+.footer {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--fg-dim);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- synthesize ---------- */
+.say { display: block; }
+
+.say__label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--fg-dim);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.say textarea,
+.say select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: rgba(5, 7, 10, 0.6);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+  border-radius: 0;
+}
+
+/* The native select chrome is the one light-coloured thing on the page. */
+.say select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--fg-dim) 50%),
+    linear-gradient(135deg, var(--fg-dim) 50%, transparent 50%);
+  background-position: right 15px top 55%, right 10px top 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.say select:hover { background-color: rgba(207, 227, 240, 0.04); }
+
+/* The dropdown list itself is painted by the OS, so give it real colours. */
+.say select option {
+  background: #0b0f14;
+  color: var(--fg);
+}
+
+.say textarea::placeholder { color: var(--fg-dim); }
+.say textarea:focus,
+.say select:focus { outline: none; border-color: var(--fg); }
+
+.say__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.say__row .say__label { grid-column: 1; margin-bottom: 6px; }
+.say__row select { grid-column: 1; }
+.say__row .btn { grid-column: 2; grid-row: 2; height: 33px; }
+
+.empty code {
+  color: var(--fg);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Bank and synthesiser stack in the left column; output sits alongside. */
+@media (min-width: 761px) {
+  .panel--bank { grid-column: 1; grid-row: 1; }
+  .panel--say  { grid-column: 1; grid-row: 2; }
+  .panel--out  { grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>ROCKY // VOX</title>
+<link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<canvas id="starfield" aria-hidden="true"></canvas>
+<div class="grid-floor" aria-hidden="true"></div>
+
+<main>
+  <header class="masthead">
+    <div class="masthead__id">
+      <h1>ROCKY <span class="sep">//</span> VOX</h1>
+      <p class="sub">Astrophage-era vocal unit <span class="sep">·</span> 40 Eridani</p>
+    </div>
+    <div class="masthead__rule" aria-hidden="true"></div>
+  </header>
+
+  <section class="status" aria-label="System status">
+    <div class="stat" id="stat-magnet">
+      <span class="dot"></span><span class="stat__label">Magnet</span>
+      <span class="stat__value" data-field="magnet">····</span>
+    </div>
+    <div class="stat" id="stat-playback">
+      <span class="dot"></span><span class="stat__label">Playback</span>
+      <span class="stat__value" data-field="playback">····</span>
+    </div>
+    <div class="stat" id="stat-amp">
+      <span class="dot"></span><span class="stat__label">MAX9744</span>
+      <span class="stat__value" data-field="amp">····</span>
+    </div>
+  </section>
+
+  <div class="columns">
+    <section class="panel panel--bank">
+      <h2 class="panel__title">Audio bank</h2>
+      <ol class="clips" id="clips"></ol>
+      <p class="empty" id="clips-empty" hidden>No clips resident in memory.</p>
+
+      <form class="drop" id="drop" aria-label="Upload a clip">
+        <input type="file" id="file" name="file" accept="{{ accept }}" multiple hidden>
+        <div class="drop__inner">
+          <p class="drop__cue">Drop audio <span class="sep">·</span> or <button type="button" class="linkish" id="browse">select a file</button></p>
+          <p class="drop__meta">{{ accept }} <span class="sep">·</span> max {{ max_upload_mb }}MB <span class="sep">·</span> max {{ max_clip_seconds }}s</p>
+        </div>
+      </form>
+      <p class="notice" id="notice" hidden></p>
+    </section>
+
+    <section class="panel panel--say">
+      <h2 class="panel__title">Synthesize</h2>
+      {% if speech_available %}
+      <form class="say" id="say">
+        <label class="say__label" for="say-text">Translator input</label>
+        <textarea id="say-text" name="text" rows="3" maxlength="1000"
+                  placeholder="Question, Rocky. Are you amazed?"></textarea>
+        <div class="say__row">
+          <label class="say__label" for="say-voice">Voice</label>
+          <select id="say-voice" name="voice">
+            {% for voice in voices %}
+            <option value="{{ voice.id }}">{{ voice.label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn" id="say-go"><span class="dot"></span>Speak</button>
+        </div>
+      </form>
+      <p class="hint">Synthesised lines join the shuffle bag like any upload.</p>
+      {% else %}
+      <p class="empty">
+        Speech synthesis is offline. Install it with
+        <code>sudo apt install espeak-ng</code>, then restart the service.
+      </p>
+      {% endif %}
+    </section>
+
+    <section class="panel panel--out">
+      <h2 class="panel__title">Output level</h2>
+      <div class="vol">
+        <div class="vol__readout">
+          <span class="vol__value" data-field="volume">--</span>
+          <span class="vol__of">/ <span data-field="volume-max">63</span></span>
+        </div>
+        <div class="vol__bar" id="volbar" role="slider" tabindex="0"
+             aria-label="Amplifier volume" aria-valuemin="0" aria-valuemax="63" aria-valuenow="0"></div>
+        <div class="vol__ends"><span>Mute</span><span data-field="volume-ceiling-label">Ceiling</span></div>
+      </div>
+
+      <h2 class="panel__title">Manual override</h2>
+      <div class="actions">
+        <button type="button" class="btn" id="trigger"><span class="dot"></span>Trigger</button>
+        <button type="button" class="btn btn--alert" id="halt"><span class="dot"></span>Halt</button>
+      </div>
+
+      <p class="hint">
+        Lifting Rocky off the base plays a clip and loops it. Setting him
+        back down cuts it off; lifting again advances to the next.
+      </p>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <span data-field="clipcount">0 clips</span>
+    <span class="sep">·</span>
+    <span data-field="link">--</span>
+  </footer>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

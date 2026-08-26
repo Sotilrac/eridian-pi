@@ -1,0 +1,9 @@
+JetBrains Mono (jetbrains-mono.woff2, latin subset) is licensed under the
+SIL Open Font License 1.1.
+
+    Copyright 2020 The JetBrains Mono Project Authors
+    https://github.com/JetBrains/JetBrainsMono
+
+The full licence text is at https://scripts.sil.org/OFL. It is bundled here
+rather than loaded from a CDN so the figurine works on a network with no
+route to the internet.
