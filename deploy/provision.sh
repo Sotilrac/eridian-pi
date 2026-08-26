@@ -12,6 +12,19 @@ DATA_DIR=${DATA_DIR:-/srv/rocky}
 CONF_DIR=${CONF_DIR:-/etc/rocky}
 SERVICE=rocky-vox.service
 RUN_USER=${RUN_USER:-rocky}
+# How audio leaves the Pi. See docs/HARDWARE.md.
+#   i2s  PCM5102A-style DAC on GPIO18/19/21   (best quality)
+#   usb  USB sound card on the OTG port       (no soldering)
+#   pwm  GPIO18/19 through an RC filter       (no extra board)
+AUDIO=${AUDIO:-i2s}
+
+case "$AUDIO" in
+  i2s | usb | pwm) ;;
+  *)
+    printf 'unknown AUDIO=%s (expected i2s, usb or pwm)\n' "$AUDIO" >&2
+    exit 1
+    ;;
+esac
 
 say() { printf '\033[36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m!!\033[0m %s\n' "$*" >&2; }
@@ -34,29 +47,18 @@ apt-get install -y --no-install-recommends \
   python3-smbus2 alsa-utils ffmpeg i2c-tools espeak-ng
 
 # --- 2. boot overlays ------------------------------------------------
+# Rewritten as a marked block rather than appended, so switching backends
+# removes the previous overlay instead of leaving it claiming GPIO18.
 CONFIG_TXT=/boot/firmware/config.txt
 [[ -f $CONFIG_TXT ]] || CONFIG_TXT=/boot/config.txt
 if [[ ! -f $CONFIG_TXT ]]; then
-  warn "cannot find config.txt; enable I2C and the I2S DAC overlay by hand"
+  warn "cannot find config.txt; set the overlays for AUDIO=$AUDIO by hand"
 else
-  ensure_line() {
-    local line=$1
-    if grep -qxF "$line" "$CONFIG_TXT"; then
-      say "already set: $line"
-    else
-      say "adding to $(basename "$CONFIG_TXT"): $line"
-      printf '\n# added by rocky-vox provision.sh\n%s\n' "$line" >>"$CONFIG_TXT"
-      reboot_required=1
-    fi
-  }
-  # I2C carries MAX9744 volume only; audio goes out over I2S.
-  ensure_line "dtparam=i2c_arm=on"
-  # PCM5102A / UDA1334A on GPIO18 (BCLK), 19 (LRCLK), 21 (DIN).
-  ensure_line "dtoverlay=hifiberry-dac"
-
-  if grep -qE '^[[:space:]]*dtparam=audio=on' "$CONFIG_TXT"; then
-    say "leaving dtparam=audio=on alone (harmless: the Zero W has no analog out)"
-  fi
+  say "applying the $AUDIO overlay block to $(basename "$CONFIG_TXT")"
+  result=$(PYTHONPATH="$APP_DIR/src" python3 -m rockyvox.bootconfig \
+    --backend "$AUDIO" --path "$CONFIG_TXT")
+  say "  config.txt $result"
+  [[ $result == changed ]] && reboot_required=1
 fi
 
 # --- 3. the i2c-dev char device --------------------------------------
@@ -67,8 +69,33 @@ printf '# added by rocky-vox provision.sh\ni2c-dev\n' >/etc/modules-load.d/rocky
 modprobe i2c-dev || warn "i2c-dev will load on the next boot"
 
 # --- 4. ALSA default device -----------------------------------------
-say "installing /etc/asound.conf"
-install -m 0644 "$APP_DIR/deploy/asound.conf" /etc/asound.conf
+# Selected by card name, not index, so it survives the HDMI codec probing in
+# a different order after an update.
+case "$AUDIO" in
+  i2s) CARD=sndrpihifiberry ;;
+  pwm) CARD=Headphones ;;
+  usb)
+    # USB dongles have no predictable name, so take the first card that is
+    # neither HDMI nor one of ours.
+    CARD=$(aplay -l 2>/dev/null |
+      sed -n 's/^card [0-9]*: \([^ ]*\).*/\1/p' |
+      grep -vxE 'vc4hdmi|sndrpihifiberry|Headphones' | head -1 || true)
+    if [[ -z $CARD ]]; then
+      warn "no USB sound card found. Check that:"
+      warn "  * the dongle is plugged into the Pi's OTG port via an adapter"
+      warn "  * the port is in host mode, not USB-ethernet gadget mode"
+      warn "    (remove modules-load=dwc2,g_ether from cmdline.txt, which"
+      warn "     gives up the usb0 network, then reboot)"
+      warn "then re-run: make provision AUDIO=usb"
+      exit 1
+    fi
+    say "found USB sound card: $CARD"
+    ;;
+esac
+
+say "installing /etc/asound.conf for card $CARD"
+sed "s/@CARD@/$CARD/g" "$APP_DIR/deploy/asound.conf.in" >/etc/asound.conf
+chmod 0644 /etc/asound.conf
 
 # --- 5. directories ---------------------------------------------------
 say "creating $DATA_DIR and $CONF_DIR"

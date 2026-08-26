@@ -26,8 +26,14 @@ is survivable, a reversed supply is not.
 ## 3. Provision
 
 ```
-make provision
+make provision AUDIO=i2s     # an I2S DAC board, the default
+make provision AUDIO=usb     # a USB sound card on the OTG port
+make provision AUDIO=pwm     # GPIO18/19 through an RC filter
 ```
+
+Pick the audio path that matches the parts you have; the comparison table in
+[HARDWARE.md](HARDWARE.md) covers the trade-offs. Switching later is the same
+command with a different value.
 
 This is idempotent, so it is safe to re-run at any point. It:
 
@@ -36,9 +42,9 @@ This is idempotent, so it is safe to re-run at any point. It:
    and `espeak-ng` from apt — nothing comes from pip, because armv6 has
    almost no prebuilt wheels and compiling them on a 1GHz single core is a
    long evening
-2. adds `dtparam=i2c_arm=on` and `dtoverlay=hifiberry-dac` to
-   `/boot/firmware/config.txt`
-3. installs `/etc/asound.conf` pointing ALSA at the DAC
+2. rewrites its marked overlay block in `/boot/firmware/config.txt` for the
+   chosen backend, and loads `i2c-dev` so `/dev/i2c-1` appears
+3. generates `/etc/asound.conf` pointing ALSA at that backend's card
 4. creates `/srv/rocky/{clips,default}` and `/etc/rocky/config.toml`
 5. transcodes the built-in clip into `/srv/rocky/default`
 6. installs and enables `rocky-vox.service`
@@ -54,7 +60,7 @@ sudo reboot
 
 ```
 make i2c-scan      # expect 0x4b
-make aplay-l       # expect card 0: sndrpihifiberry
+make aplay-l       # expect the card for your AUDIO= backend
 make speaker-test  # pink noise, left then right
 ```
 

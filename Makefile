@@ -5,6 +5,8 @@
 PI       ?= rocky
 APP_DIR  ?= /opt/rocky
 PORT     ?= 8080
+# How audio leaves the Pi: i2s (DAC board), usb (sound card), pwm (RC filter).
+AUDIO    ?= i2s
 VENV     ?= .venv
 PY       := $(VENV)/bin/python
 SSH      := ssh $(PI)
@@ -69,10 +71,10 @@ deploy: ## Push the code to the Pi and restart the service
 	@$(wait_up)
 	@echo "deployed to http://$$($(SSH) hostname).local:$(PORT)"
 
-provision: ## First-run setup on the Pi (packages, overlays, service)
+provision: ## Setup on the Pi; pick the audio path: make provision AUDIO=usb
 	$(SSH) 'sudo mkdir -p $(APP_DIR) && sudo chown $$USER $(APP_DIR)'
 	$(RSYNC) --exclude '__pycache__' $(PAYLOAD) $(PI):$(APP_DIR)/
-	$(SSH) 'sudo $(APP_DIR)/deploy/provision.sh'
+	$(SSH) 'sudo AUDIO=$(AUDIO) $(APP_DIR)/deploy/provision.sh'
 
 restart: ## Restart the service and wait for it to answer
 	$(SSH) 'sudo systemctl restart rocky-vox'
@@ -97,7 +99,7 @@ shell: ## SSH to the Pi
 i2c-scan: ## Scan the I2C bus; the MAX9744 should answer at 0x4b
 	$(SSH) '/usr/sbin/i2cdetect -y 1'
 
-aplay-l: ## List ALSA playback devices; expect sndrpihifiberry
+aplay-l: ## List ALSA playback devices; expect the card for your AUDIO=
 	$(SSH) 'aplay -l'
 
 speaker-test: ## Two channels of pink noise through the amp

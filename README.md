@@ -15,6 +15,11 @@ typing text for the on-board synthesiser.
   hall sensor ──▶ Pi GPIO17
 ```
 
+A Zero W has no analog output, so something has to produce a line-level
+signal. An I2S DAC is the default; a USB sound card or a PWM pin through an
+RC filter both work too, and are one provisioning flag apart. See
+[docs/HARDWARE.md](docs/HARDWARE.md).
+
 ## Behaviour
 
 | Event | Response |
@@ -31,7 +36,7 @@ cannot be deleted.
 ## Quickstart
 
 ```
-make provision     # one-time: packages, boot overlays, service
+make provision     # packages, overlays, service; add AUDIO=usb or AUDIO=pwm
 make shell         # then: sudo reboot, for the overlays
 make deploy        # push code and restart
 make open          # the control panel

@@ -24,12 +24,97 @@ the HDMI codec, which is why the DAC is not optional.
 |---|---|
 | Raspberry Pi Zero W | Raspbian Trixie, headless |
 | Adafruit MAX9744 20W class-D amp (#1752) | 4.5–14V, I2C volume at `0x4B` |
-| PCM5102A I2S DAC breakout | GY-PCM5102 or Adafruit UDA1334A (#3678) |
+| An audio path out of the Pi | **pick one of three**, see below |
 | Digital hall effect sensor | A3144, US5881 or DRV5032 — see below |
 | Neodymium disc magnet | in the base or lid |
 | 4Ω 10W speaker | into the amp's terminal block |
 | 9V 2A DC supply, 2.1mm barrel | for the amp **only** |
 | 3.5mm patch lead | DAC line out → amp input |
+
+## Getting audio out of the Pi
+
+A Pi Zero W has no analog output. Its only built-in audio device is the HDMI
+codec, so something has to turn the digital signal into a line-level one
+before the amplifier can do anything with it. There are three ways, and the
+software supports all of them: pick one and pass it to provisioning.
+
+| | `AUDIO=i2s` | `AUDIO=usb` | `AUDIO=pwm` |
+|---|---|---|---|
+| What it needs | a PCM5102A-class DAC board | a USB sound card and an OTG adapter | 2 resistors and 4 capacitors |
+| Cost | around $7 | often already in a drawer | pennies |
+| Quality | clean, full 16-bit | good | audible noise floor |
+| Soldering | header pins | none | a little |
+| Costs you | GPIO18/19/21 | the USB gadget network | GPIO18/19 |
+
+Whichever you choose, the I2C wiring to the amplifier is identical: it only
+ever carries volume.
+
+```
+make provision AUDIO=i2s     # the default
+make provision AUDIO=usb
+make provision AUDIO=pwm
+```
+
+Switching later is one command. The overlays live in a marked block in
+`config.txt` that is rewritten wholesale, so changing backend removes the
+previous one rather than leaving it behind claiming GPIO18.
+
+### `AUDIO=i2s` — an I2S DAC board
+
+The best-sounding option. Any PCM5102A breakout works (GY-PCM5102, HiLetgo,
+and similar), as does the Adafruit UDA1334A #3678. Wire it per the pinout
+below and feed its line output into the amp's 3.5mm jack.
+
+### `AUDIO=usb` — a USB sound card
+
+The Pi Zero W has exactly one USB data port: the inner micro-USB marked
+`USB`. The outer one is `PWR IN` and carries power only. So a dongle needs a
+**micro-USB OTG adapter** (micro-B male to USB-A female) to reach it.
+
+Two things to know before committing to this route:
+
+The port is very likely already busy. Raspberry Pi OS images set up for
+USB-ethernet gadget mode carry `modules-load=dwc2,g_ether` in
+`/boot/firmware/cmdline.txt` and bring up a `usb0` interface, which puts the
+controller in *peripheral* mode. A sound card needs *host* mode. Removing
+that from `cmdline.txt` and rebooting frees the port and gives up the `usb0`
+network in exchange. Check with `ip -brief addr show usb0` before deciding.
+
+Provisioning will not touch `cmdline.txt` on your behalf. If it cannot find
+a USB sound card it says so and stops, rather than quietly leaving you with
+no audio device.
+
+### `AUDIO=pwm` — GPIO through an RC filter
+
+No extra board: the SoC's PWM channels are remapped onto GPIO18 and GPIO19
+and low-pass filtered into something a line input will accept. This is what
+the Pi's own analog output does.
+
+Per channel:
+
+```
+  GPIO18 ──[ 270R ]──┬──[ 10uF ]──▶ MAX9744 L in
+                     │   (+ toward the resistor)
+                  [ 33nF ]
+                     │
+                    GND
+
+  GPIO19 ──[ 270R ]──┬──[ 10uF ]──▶ MAX9744 R in
+                     │
+                  [ 33nF ]
+                     │
+                    GND
+```
+
+The 270R/33nF pair is the low-pass filter that turns the PWM carrier back
+into audio. The 10uF in series blocks the roughly 1.65V DC offset that PWM
+output sits at, which the amplifier would otherwise happily amplify into the
+speaker.
+
+Expect an audible hiss, especially through a 20W amplifier. It matters less
+here than it would for music, because the synthesised voice is band-limited
+and gruff to begin with, but it is the compromise option and worth knowing
+that going in.
 
 ## Pinout
 
@@ -149,19 +234,28 @@ correctly and still silent.
 
 ## Boot configuration
 
-Both lines are added by `deploy/provision.sh`, and both need a reboot:
+`deploy/provision.sh` owns a marked block in `/boot/firmware/config.txt` and
+rewrites it on every run. Changes here need a reboot.
 
 ```
-dtparam=i2c_arm=on      # /dev/i2c-1, for the amp's volume register
-dtoverlay=hifiberry-dac # I2S out on GPIO18/19/21, for the PCM5102A
+# >>> rocky-vox >>>
+dtparam=i2c_arm=on        # /dev/i2c-1, for the amp's volume register
+dtoverlay=hifiberry-dac   # AUDIO=i2s only
+# <<< rocky-vox <<<
 ```
 
-`dtparam=audio=on` can stay; it is harmless on a Zero W, which has no analog
-output for it to enable.
+`AUDIO=pwm` swaps the second line for `dtoverlay=audremap,pins_18_19`;
+`AUDIO=usb` needs no overlay at all. Editing anything outside the markers is
+safe, and the block never touches the rest of the file.
 
-`/etc/asound.conf` points the default ALSA device at the DAC by card *name*
-rather than index, so it survives the HDMI codec probing in a different order
-after an update.
+`dtparam=i2c_arm=on` enables the controller but does not on its own create
+`/dev/i2c-1`. The `i2c-dev` module has to be loaded too, and nothing on a
+headless image does it, so provisioning writes
+`/etc/modules-load.d/rocky-vox.conf`.
+
+`/etc/asound.conf` is generated from `deploy/asound.conf.in` with the card
+for the chosen backend filled in, by *name* rather than index, so it survives
+the HDMI codec probing in a different order after an update.
 
 The PCM5102A has no hardware mixer, so `amixer` cannot change the level and
 `alsamixer` will show nothing. That is expected: volume lives on the
@@ -171,7 +265,7 @@ MAX9744, over I2C.
 
 ```
 make i2c-scan      # 0x4b appears in the grid
-make aplay-l       # card 0: sndrpihifiberry
+make aplay-l       # the card for your AUDIO= backend
 make speaker-test  # pink noise, left then right
 make volume V=20   # audibly quieter
 make volume V=45   # audibly louder
@@ -179,9 +273,11 @@ make volume V=45   # audibly louder
 
 | Symptom | Likely cause |
 |---|---|
-| `i2cdetect` finds nothing | `dtparam=i2c_arm=on` missing, or no reboot yet |
+| `i2cdetect` finds nothing | `dtparam=i2c_arm=on` missing, `i2c-dev` unloaded, or no reboot yet |
+| `i2cdetect: command not found` | it lives in `/usr/sbin`, which SSH does not put on `PATH` |
 | `0x4b` missing but the bus scans | amp unpowered, or `Vi2c` not on 3V3 |
-| No card in `aplay -l` | `dtoverlay=hifiberry-dac` missing, or no reboot yet |
+| No card in `aplay -l` | wrong `AUDIO=` backend, or no reboot yet |
+| No USB card with `AUDIO=usb` | port still in gadget mode, or no OTG adapter |
 | Card present, no sound | `SCK` floating on the DAC; or `SHDN` held low |
 | Hiss between clips | wire `SHDN` to GPIO27 and set `shutdown_pin` |
 | Distortion at high volume | lower `max_volume`, back off the trim pot, use 9V |
