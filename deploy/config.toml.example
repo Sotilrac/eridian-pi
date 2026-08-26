@@ -1,0 +1,39 @@
+# Rocky Vox configuration. Installed to /etc/rocky/config.toml.
+# Every key is optional; anything omitted falls back to the built-in default.
+
+# --- storage ---------------------------------------------------------
+clips_dir   = "/srv/rocky/clips"
+default_dir = "/srv/rocky/default"
+state_file  = "/srv/rocky/state.json"
+
+# --- hall effect sensor ----------------------------------------------
+sensor_pin = 17
+# Open-collector halls (A3144, US5881) pull the line LOW with a magnet
+# present. Set false if your sensor, or your magnet's pole, is the other
+# way round -- the symptom is Rocky talking while seated and going quiet
+# when lifted.
+magnet_present_is_low = true
+bounce_seconds = 0.05
+
+# --- playback --------------------------------------------------------
+# Pause between repeats of the same clip while the figurine stays lifted.
+repeat_gap_seconds = 1.0
+alsa_device = "default"
+
+# --- MAX9744 amplifier -----------------------------------------------
+i2c_bus = 1
+amp_address = 0x4B
+# The amp reaches 20W into 4 ohms at 12V; a 10W speaker will not survive
+# that. This caps the digital side. Keep the board's trim pot backed off
+# as well, and prefer a 9V supply over 12V.
+max_volume = 45
+default_volume = 30
+# Optional GPIO wired to the MAX9744 SHDN pin. Mutes the amp between
+# clips so the output stage does not hiss inside the shell.
+# shutdown_pin = 27
+
+# --- web -------------------------------------------------------------
+host = "0.0.0.0"
+port = 8080
+max_upload_bytes = 33554432   # 32MB
+max_clip_seconds = 300.0

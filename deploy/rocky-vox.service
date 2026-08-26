@@ -1,0 +1,31 @@
+[Unit]
+Description=Rocky Vox - hall-triggered audio for the Rocky figurine
+Documentation=file:/opt/rocky/docs/HARDWARE.md
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rocky
+Group=rocky
+# gpio for the hall sensor and SHDN, i2c for the amp, audio for ALSA.
+SupplementaryGroups=gpio i2c audio
+WorkingDirectory=/opt/rocky
+Environment=PYTHONPATH=/opt/rocky/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m rockyvox --config /etc/rocky/config.toml
+Restart=always
+RestartSec=3
+# ffmpeg transcodes must never starve the playback thread.
+Nice=-5
+TimeoutStopSec=10
+
+# The service only ever needs its own code, its clips and its config.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/rocky
+
+[Install]
+WantedBy=multi-user.target
