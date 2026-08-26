@@ -1,0 +1,39 @@
+[project]
+name = "rockyvox"
+version = "1.0.0"
+description = "Talking Project Hail Mary figurine: hall-sensor triggered audio with a LAN upload UI"
+requires-python = ">=3.11"
+dependencies = ["flask>=3.0", "waitress>=3.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6", "gpiozero>=2.0", "smbus2>=0.4"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rockyvox = ["templates/*.html", "static/*"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "RUF"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+filterwarnings = [
+    "error",
+    # Werkzeug's test client leaves the file handle behind on send_file,
+    # which surfaces as an unraisable ResourceWarning under -W error.
+    "ignore::ResourceWarning",
+]
