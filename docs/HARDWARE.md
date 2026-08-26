@@ -33,26 +33,49 @@ the HDMI codec, which is why the DAC is not optional.
 
 ## Pinout
 
-BCM numbering; the physical pin is given for the header.
+One row per wire, ordered by physical header pin so it can be worked
+through top to bottom. A dot means that device takes nothing from this pin.
 
-| Pin | BCM | To | Purpose |
-|---|---|---|---|
-| 1 | 3V3 | MAX9744 `Vi2c` | I2C level reference — **3.3V, never 5V** |
-| 3 | GPIO2 | MAX9744 `SDA` | volume data |
-| 5 | GPIO3 | MAX9744 `SCL` | volume clock |
-| 2 | 5V | PCM5102A `VIN` | DAC power |
-| 12 | GPIO18 | PCM5102A `BCK` | I2S bit clock |
-| 35 | GPIO19 | PCM5102A `LRCK` / `LCK` | I2S word select |
-| 40 | GPIO21 | PCM5102A `DIN` | I2S data |
-| 4 | 5V | hall sensor `VCC` | see the voltage note |
-| 11 | GPIO17 | hall sensor `OUT` | trigger, internal pull-up |
-| 13 | GPIO27 | MAX9744 `SHDN` *(optional)* | mutes the amp between clips |
-| 6, 9, 14, 20, 25, 39 | GND | every board and the PSU | **common ground is mandatory** |
+| Pi pin | BCM | MAX9744 | PCM5102A | Hall sensor | Purpose |
+|---|---|---|---|---|---|
+| 1 | 3V3 | `Vi2c` | · | · | I2C level reference. **3.3V, never 5V** |
+| 2 | 5V | · | `VIN` | · | DAC power |
+| 3 | GPIO2 | `SDA` | · | · | volume data |
+| 4 | 5V | · | · | `VCC` | sensor power, see the voltage note below |
+| 5 | GPIO3 | `SCL` | · | · | volume clock |
+| 6 | GND | · | `GND` | · | DAC ground |
+| 9 | GND | `GND` | · | · | amp ground, and the ground bond |
+| 11 | GPIO17 | · | · | `OUT` | trigger input, internal pull-up |
+| 12 | GPIO18 | · | `BCK` | · | I2S bit clock |
+| 13 | GPIO27 | `SHDN` *(optional)* | · | · | mutes the amp between clips |
+| 25 | GND | · | · | `GND` | sensor ground |
+| 35 | GPIO19 | · | `LRCK` / `LCK` | · | I2S word select |
+| 40 | GPIO21 | · | `DIN` | · | I2S data |
 
-The optional `SHDN` wire is worth adding. Without it the class-D output
-stage idles at full gain and the speaker hisses inside the shell between
-clips; with it the service mutes the amp whenever nothing is playing. Set
-`shutdown_pin = 27` in `/etc/rocky/config.toml` once it is wired.
+Not on the header, because it does not touch the Pi:
+
+| From | To | Purpose |
+|---|---|---|
+| PCM5102A `LOUT` / `ROUT` / `AGND` | MAX9744 input (3.5mm jack or `L` / `R` / `GND`) | the audio itself |
+| 9V PSU | MAX9744 barrel jack | amp power, **never the Pi's 5V rail** |
+| MAX9744 `L+` / `L-` | 4Ω speaker | the one channel that is used |
+
+### Grounds
+
+Every ground above is one net. Pin 9 is the wire that matters: it bonds the
+Pi to the amp, and through the amp's barrel jack to the 9V supply. Without
+it the amp's input has no reference to the signal arriving from the DAC, and
+the result is hum, hiss, or nothing at all.
+
+The audio cable's sleeve is a second path between the DAC and the amp. At
+this scale that is harmless, so there is no need to lift it.
+
+### The optional SHDN wire
+
+Worth adding. Without it the class-D output stage idles at full gain and the
+speaker hisses inside the shell between clips; with it the service mutes the
+amp whenever nothing is playing. Set `shutdown_pin = 27` in
+`/etc/rocky/config.toml` once it is wired.
 
 ## Hall sensor voltage
 
