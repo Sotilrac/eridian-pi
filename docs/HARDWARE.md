@@ -399,6 +399,10 @@ written against.
 
 1. Wick open all three solder jumpers: `Analog`, `AD1`, `AD2`. All three,
    not just the first. Any one left closed keeps the chip in analog mode.
+   Clear them **completely** and check continuity with a meter: a pad that
+   looks clean can still hold a hair-thin bridge, and a partial bridge is
+   worse than no attempt, because it fails intermittently. See the symptom
+   table below.
 2. Remove the potentiometer from the `Pot Vol` pads. With `Analog` open it
    is inert anyway, but Adafruit's guide says not to fit it in digital mode
    and there is no reason to leave it there.
@@ -432,3 +436,52 @@ would set the ceiling once and then be left alone.
 This needs a change in `amp.py` rather than a wiring change, and it leaves
 `amp_online` permanently false. Worth it if the amp is staying in analog
 mode.
+
+
+## Symptoms of a half-cleared mode jumper
+
+Converting the amp back to I2C cost an evening because a partly-wicked
+`Analog` pad produces different faults depending on how much solder is left.
+Read the I2C lines at idle before suspecting anything else:
+
+```sh
+python3 -c "
+import lgpio
+h=lgpio.gpiochip_open(0)
+for pin,name in ((2,'SDA'),(3,'SCL')):
+    lgpio.gpio_claim_input(h,pin); print(name, lgpio.gpio_read(h,pin)); lgpio.gpio_free(h,pin)"
+```
+
+| SDA | SCL | Meaning |
+|---|---|---|
+| 1 | 1 | bus is idle and healthy; a failure here is elsewhere |
+| 1 | 0 | jumper still fully bridged. `i2cdetect` hangs rather than returning |
+| 1 | 1 but every write is `ETIMEDOUT` | jumper partly bridged, or an intermittent contact |
+
+`ETIMEDOUT` (errno 110) is not the same as no device. A missing chip gives
+`ENXIO` or `EREMOTEIO` quickly. A timeout means the transfer never
+completed, which points at the bus rather than the address.
+
+Note also that `i2cdetect` is the wrong tool for this chip. The MAX9744
+takes a bare volume byte and supports no reads at all, so the default probe
+can hang on it even when the bus is fine. Write a byte instead:
+
+```sh
+python3 -c "import smbus2; smbus2.SMBus(1).write_byte(0x4b, 20)"
+```
+
+## Where the volume lives
+
+With the amp in I2C mode there are two attenuators in series, and putting
+them in the wrong order costs level and adds hiss:
+
+- ALSA `PCM` on the Pi's PWM card: leave at **0dB** and store it. PWM has a
+  fixed noise floor, so attenuating here throws away signal and keeps the
+  hiss.
+- MAX9744 over I2C, 0-63: this is the volume control. The web slider,
+  `make volume`, and the uncapping gate all drive it.
+
+```sh
+sudo amixer -c Headphones sset PCM -- 0
+sudo alsactl store
+```
