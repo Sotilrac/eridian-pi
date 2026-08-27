@@ -2,7 +2,7 @@
 #
 # Local targets run on this machine; everything else is driven over SSH.
 
-PI       ?= rocky
+PI       ?= erid
 APP_DIR  ?= /opt/rocky
 PORT     ?= 8080
 # How audio leaves the Pi: i2s (DAC board), usb (sound card), pwm (RC filter).
