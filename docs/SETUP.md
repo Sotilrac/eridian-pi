@@ -5,16 +5,23 @@ Start to finish, from a fresh Raspberry Pi OS install to a talking figurine.
 ## 1. Prepare the Pi
 
 Raspbian Trixie (Debian 13), headless, on the network, with SSH working and
-passwordless sudo. Everything below assumes an SSH alias named `rocky`:
+passwordless sudo. Everything below assumes an SSH alias named `erid`, which
+is the `PI` the Makefile defaults to:
 
 ```
-Host rocky
+Host erid
     User rocky
-    Hostname 192.168.3.121
+    Hostname erid.local
     IdentityFile ~/.ssh/id_rsa_rocky
 ```
 
-Use a different alias by passing it through: `make deploy PI=myhost`.
+Point `Hostname` at the mDNS name rather than an address. The Pi's lease
+moves, and every `make` target breaks the day it does. `avahi-daemon` runs by
+default on Raspberry Pi OS, so `<hostname>.local` resolves without setup.
+
+Use a different alias by passing it through: `make deploy PI=myhost`. If mDNS
+is not available on your network, an address works too, at the cost of having
+to edit it when the lease changes.
 
 ## 2. Wire it up
 
