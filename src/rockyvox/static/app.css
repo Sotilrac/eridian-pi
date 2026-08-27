@@ -407,8 +407,11 @@ main {
 @media (min-width: 761px) {
   .panel--bank { grid-column: 1; grid-row: 1; }
   .panel--say  { grid-column: 1; grid-row: 2; }
-  .panel--out  { grid-column: 2; grid-row: 1; align-self: start; }
-  .panel--api  { grid-column: 2; grid-row: 2; align-self: start; }
+  .stack {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
 }
 
 /* ---------- the ceiling gate ---------- */
@@ -530,6 +533,13 @@ main {
 
 
 /* ---------------- interface reference ---------------- */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
 .panel--api { padding: 0; }
 
 .api__summary {
@@ -561,7 +571,8 @@ main {
 .api__summary:hover .api__chev { border-color: var(--fg); }
 .api__summary:focus-visible { outline: 1px solid var(--fg); outline-offset: -3px; }
 
-/* Bounded so the box never outgrows the panel beside it; the list scrolls. */
+/* Bounded so the box never outgrows the panel beside it; the list scrolls.
+   The exact ceiling is measured in app.js against the synthesiser panel. */
 .api__body {
   max-height: 300px;
   overflow-y: auto;
