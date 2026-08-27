@@ -232,7 +232,9 @@ def test_the_page_offers_the_synthesiser_when_espeak_is_present(
     app = create_app(config=config, library=library, controller=controller, amp=amp)
     body = app.test_client().get("/").data
     assert b"Translator input" in body
-    assert b"Rocky" in body
+    # The quote list is embedded for the placeholder to cycle through.
+    assert b'id="rocky-lines"' in body
+    assert b"Fist my bump." in body
 
 
 def test_the_page_explains_how_to_install_espeak_when_missing(
@@ -349,3 +351,19 @@ def test_the_trigger_can_be_disarmed_and_rearmed(client):
 def test_arming_rejects_anything_that_is_not_a_boolean(client):
     for body in ({}, {"armed": "yes"}, {"armed": 1}, {"armed": None}):
         assert client.post("/api/arm", json=body).status_code == 400
+
+
+# -- interface reference -----------------------------------------------
+
+
+def test_the_page_documents_the_api(client):
+    body = client.get("/").get_data(as_text=True)
+    for route in ("/api/state", "/api/arm", "/api/volume", "/api/speak", "/api/uncap"):
+        assert route in body, route
+
+
+def test_the_api_reference_starts_collapsed(client):
+    body = client.get("/").get_data(as_text=True)
+    assert '<details class="api"' in body
+    # No `open` attribute, so the browser renders it closed.
+    assert '<details class="api" id="api-docs" open' not in body

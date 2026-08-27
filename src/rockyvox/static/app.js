@@ -293,16 +293,11 @@
   /* ---------------- magnet trigger ---------------- */
   let armed = true;
   const armToggle = $("#arm-toggle");
-  const armHint = $("#arm-hint");
 
   function paintArm(value) {
     armed = value;
     armToggle.setAttribute("aria-checked", String(value));
     armToggle.classList.toggle("is-off", !value);
-    setField("arm-state", value ? "Armed" : "Disarmed");
-    armHint.textContent = value
-      ? "Lifting Rocky off the base plays a clip and loops it. Setting him back down cuts it off; lifting again advances to the next."
-      : "The magnet is ignored. Rocky can be picked up without speaking.";
   }
 
   armToggle.addEventListener("click", async () => {
@@ -331,6 +326,7 @@
     try {
       renderState(await api("/api/state"));
       setField("link", window.location.host);
+      setField("api-host", window.location.host);
     } catch (err) {
       setStat("stat-amp", "is-alert", "Offline");
       setField("link", "link lost");

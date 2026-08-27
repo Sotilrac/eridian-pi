@@ -110,25 +110,76 @@
         </div>
       </div>
 
-      <h2 class="panel__title">Magnet trigger</h2>
-      <div class="arm" id="arm">
-        <button type="button" class="arm__switch" id="arm-toggle" role="switch" aria-checked="true">
+      <div class="panel__head">
+        <h2 class="panel__title">Magnet trigger</h2>
+        <button type="button" class="arm__switch" id="arm-toggle"
+                role="switch" aria-checked="true" aria-label="Magnet trigger">
           <span class="arm__track"><span class="arm__knob"></span></span>
-          <span class="arm__state" data-field="arm-state">Armed</span>
         </button>
       </div>
-      <p class="hint" id="arm-hint">
-        Lifting Rocky off the base plays a clip and loops it. Setting him
-        back down cuts it off; lifting again advances to the next.
-      </p>
 
       <h2 class="panel__title">Manual override</h2>
       <div class="actions">
         <button type="button" class="btn" id="trigger"><span class="dot"></span>Trigger</button>
         <button type="button" class="btn btn--alert" id="halt"><span class="dot"></span>Halt</button>
       </div>
+    </section>
 
-      <p class="hint">Manual controls work whether or not the trigger is armed.</p>
+    <section class="panel panel--api">
+      <details class="api" id="api-docs">
+        <summary class="api__summary">
+          <span class="panel__title api__title">Interface</span>
+          <span class="api__chev" aria-hidden="true"></span>
+        </summary>
+        <div class="api__body">
+          <p class="hint api__note">
+            No authentication. Anything on the LAN can call these.
+          </p>
+          <dl class="api__list">
+            <dt><span class="api__m api__m--get">GET</span><code>/api/state</code></dt>
+            <dd>everything the page polls: magnet, playback, volume, clips, jobs</dd>
+
+            <dt><span class="api__m api__m--get">GET</span><code>/api/clips</code></dt>
+            <dd>the audio bank</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/clips</code></dt>
+            <dd>upload, multipart <code>file</code>. Returns a job id</dd>
+
+            <dt><span class="api__m api__m--del">DEL</span><code>/api/clips/&lt;id&gt;</code></dt>
+            <dd>delete one. 403 on the built-in clip</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/clips/&lt;id&gt;/preview</code></dt>
+            <dd>audition a clip now</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/speak</code></dt>
+            <dd><code>{"text": "Fist my bump."}</code></dd>
+
+            <dt><span class="api__m api__m--get">GET</span><code>/api/voices</code></dt>
+            <dd>whether espeak-ng is installed</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/arm</code></dt>
+            <dd><code>{"armed": true|false}</code>. Disarmed, the magnet is ignored</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/trigger</code></dt>
+            <dd>play one clip, as if lifted</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/stop</code></dt>
+            <dd>silence now</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/volume</code></dt>
+            <dd><code>{"value": 0-63}</code>, clamped to the ceiling</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/uncap</code></dt>
+            <dd><code>{"answer": "..."}</code>. Lifts the ceiling if correct</dd>
+
+            <dt><span class="api__m">POST</span><code>/api/recap</code></dt>
+            <dd>restore the configured ceiling</dd>
+          </dl>
+          <p class="hint api__note">
+            <code>curl -X POST http://<span data-field="api-host">&hellip;</span>/api/trigger</code>
+          </p>
+        </div>
+      </details>
     </section>
   </div>
 
