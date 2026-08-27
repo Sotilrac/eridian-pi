@@ -41,24 +41,14 @@ class Voice:
     word_gap_ms: int = 0
 
 
+#: One voice only. The plain formant translator is the closest thing to how
+#: Rocky actually sounds, and offering alternatives just invited worse ones.
 VOICES: dict[str, Voice] = {
     v.id: v
-    for v in (
-        Voice(
-            id="rocky",
-            label="Rocky",
-            voice="en-us+m3",
-            speed=145,
-            pitch=8,
-            word_gap_ms=8,
-        ),
-        Voice(id="translator", label="Translator", voice="en-us", speed=175, pitch=50),
-        Voice(id="astrophage", label="Astrophage", voice="en-us+whisper", speed=130, pitch=28),
-        Voice(id="grace", label="Grace", voice="en-gb+m1", speed=180, pitch=42),
-    )
+    for v in (Voice(id="translator", label="Translator", voice="en-us", speed=175, pitch=50),)
 }
 
-DEFAULT_VOICE = "rocky"
+DEFAULT_VOICE = "translator"
 
 
 def available() -> bool:

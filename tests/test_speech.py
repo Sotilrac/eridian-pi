@@ -52,16 +52,15 @@ def test_title_is_truncated_with_an_ellipsis():
 # -- voices ------------------------------------------------------------
 
 
-def test_the_default_voice_is_rocky():
-    assert speech.resolve_voice(None).id == "rocky"
-    assert speech.resolve_voice("nonsense").id == "rocky"
+def test_the_translator_is_the_only_voice():
+    assert set(speech.VOICES) == {"translator"}
 
 
-def test_rocky_is_deeper_and_slower_than_the_plain_translator():
-    rocky = speech.resolve_voice("rocky")
-    translator = speech.resolve_voice("translator")
-    assert rocky.pitch < translator.pitch
-    assert rocky.speed < translator.speed
+def test_anything_unrecognised_falls_back_to_the_translator():
+    assert speech.resolve_voice(None).id == "translator"
+    assert speech.resolve_voice("nonsense").id == "translator"
+    # Voices that used to exist must not resurrect as a 404 either.
+    assert speech.resolve_voice("rocky").id == "translator"
 
 
 def test_every_voice_stays_inside_espeak_limits():
@@ -86,10 +85,10 @@ def test_the_command_line_matches_the_chosen_voice(monkeypatch, tmp_path):
     monkeypatch.setattr(speech.subprocess, "run", fake_run)
 
     target = tmp_path / "out.wav"
-    speech.synthesize("Question.", "astrophage", target=target)
+    speech.synthesize("Question.", "translator", target=target)
 
     command = captured["command"]
-    voice = speech.VOICES["astrophage"]
+    voice = speech.VOICES["translator"]
     assert command[0] == speech.ESPEAK
     assert command[command.index("-v") + 1] == voice.voice
     assert command[command.index("-s") + 1] == str(voice.speed)

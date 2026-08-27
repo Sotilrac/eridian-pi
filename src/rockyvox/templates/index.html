@@ -64,13 +64,7 @@
         <textarea id="say-text" name="text" rows="3" maxlength="1000"
                   placeholder="Fist my bump."></textarea>
         <div class="say__row">
-          <label class="say__label" for="say-voice">Voice</label>
-          <select id="say-voice" name="voice">
-            {% for voice in voices %}
-            <option value="{{ voice.id }}">{{ voice.label }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn" id="say-go"><span class="dot"></span>Speak</button>
+          <button type="submit" class="btn" id="say-go"><span class="dot"></span>Synthesize</button>
         </div>
       </form>
       <p class="hint">Synthesised lines join the shuffle bag like any upload.</p>

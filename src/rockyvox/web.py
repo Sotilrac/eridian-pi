@@ -71,7 +71,6 @@ def create_app(
             max_upload_mb=config.max_upload_bytes // (1024 * 1024),
             max_clip_seconds=int(config.max_clip_seconds),
             accept=",".join(config.allowed_extensions),
-            voices=list(VOICES.values()),
             speech_available=speech_available(),
             uncap_question=UNCAP_QUESTION,
             rocky_lines=list(ROCKY_LINES),

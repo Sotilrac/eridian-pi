@@ -200,13 +200,13 @@ def test_the_page_references_no_external_hosts():
 
 def test_voices_are_advertised(client):
     body = client.get("/api/voices").get_json()
-    assert {v["id"] for v in body["voices"]} >= {"rocky", "translator"}
+    assert {v["id"] for v in body["voices"]} == {"translator"}
     assert isinstance(body["available"], bool)
 
 
 def test_speak_queues_a_job(client, monkeypatch):
     monkeypatch.setattr("rockyvox.speech.shutil.which", lambda _n: "/usr/bin/espeak-ng")
-    response = client.post("/api/speak", json={"text": "Amaze.", "voice": "rocky"})
+    response = client.post("/api/speak", json={"text": "Amaze."})
     assert response.status_code == 202
     assert response.get_json()["title"] == "Amaze."
 

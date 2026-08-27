@@ -374,8 +374,7 @@ main {
   text-transform: uppercase;
 }
 
-.say textarea,
-.say select {
+.say textarea {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line);
@@ -387,41 +386,16 @@ main {
   border-radius: 0;
 }
 
-/* The native select chrome is the one light-coloured thing on the page. */
-.say select {
-  appearance: none;
-  padding-right: 30px;
-  background-image: linear-gradient(45deg, transparent 50%, var(--fg-dim) 50%),
-    linear-gradient(135deg, var(--fg-dim) 50%, transparent 50%);
-  background-position: right 15px top 55%, right 10px top 55%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  cursor: pointer;
-}
-
-.say select:hover { background-color: rgba(207, 227, 240, 0.04); }
-
-/* The dropdown list itself is painted by the OS, so give it real colours. */
-.say select option {
-  background: #0b0f14;
-  color: var(--fg);
-}
-
 .say textarea::placeholder { color: var(--fg-dim); }
-.say textarea:focus,
-.say select:focus { outline: none; border-color: var(--fg); }
+.say textarea:focus { outline: none; border-color: var(--fg); }
 
 .say__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 10px;
+  display: flex;
+  justify-content: flex-end;
   margin-top: 12px;
 }
 
-.say__row .say__label { grid-column: 1; margin-bottom: 6px; }
-.say__row select { grid-column: 1; }
-.say__row .btn { grid-column: 2; grid-row: 2; height: 33px; }
+.say__row .btn { height: 33px; }
 
 .empty code {
   color: var(--fg);

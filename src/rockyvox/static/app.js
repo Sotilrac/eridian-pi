@@ -339,7 +339,6 @@
   const sayForm = $("#say");
   if (sayForm) {
     const sayText = $("#say-text");
-    const sayVoice = $("#say-voice");
     const sayGo = $("#say-go");
 
     sayForm.addEventListener("submit", async (event) => {
@@ -352,7 +351,7 @@
         const result = await api("/api/speak", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice: sayVoice.value }),
+          body: JSON.stringify({ text }),
         });
         say(`Synthesising "${result.title}"…`, true);
         sayText.value = "";
