@@ -21,7 +21,7 @@ ROCKY_LINES: tuple[str, ...] = (
     "Grumpy. Angry. Stupid. How long since last sleep, question?",
     "Good. Proud. I am scary space monster. You are leaky space blob.",
     "This is happy. Your face opening is in sad mode. Why, question?",
-    "Question? You observe? You watch me sleep? Why, friend?",
+    "I sleep better if you observe.",
     "Be careful. You are friend now.",
     "Need word: to risk self to help another.",
     "Understand.",
