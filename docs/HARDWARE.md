@@ -130,11 +130,12 @@ other, never both, since they share GPIO18.
 | 1 | 3V3 | `Vi2c` | · | · | · | I2C level reference. **3.3V, never 5V**. Only needed in I2C mode |
 | 2 | 5V | · | · | `VIN` | · | DAC power |
 | 3 | GPIO2 | `SDA` | · | · | · | volume data, I2C mode only |
-| 4 | 5V | · | · | · | `VCC` | sensor power, see the voltage note below |
+| 4 | 5V | · | · | · | *(alt `VCC`)* | 5V option for the sensor, see the voltage note |
 | 5 | GPIO3 | `SCL` | · | · | · | volume clock, I2C mode only |
 | 6 | GND | · | filter ground | `GND` | · | return for the RC filter |
 | 9 | GND | `GND` | · | · | · | amp ground, and the ground bond |
 | 11 | GPIO17 | · | · | · | `OUT` | trigger input, internal pull-up |
+| 17 | 3V3 | · | · | · | `VCC` | sensor power as built |
 | 12 | GPIO18 | `L` in | **220R + 44nF** | `BCK` | · | the audio itself |
 | 13 | GPIO27 | `SHDN` *(optional)* | · | · | · | mutes the amp between clips |
 | 25 | GND | · | · | · | `GND` | sensor ground |
@@ -184,12 +185,19 @@ A3144 and US5881 are specified from 4.5V and 3.5V respectively, so they are
 out of spec on the Pi's 3.3V rail. Both have **open-collector** outputs,
 which gives the correct wiring for free:
 
-- `VCC` → **5V** (pin 4), inside spec
-- `OUT` → **GPIO17**, relying on the Pi's *internal 3.3V pull-up*
-- `GND` → common ground
+- `VCC` → **3V3** (pin 17) as built, or **5V** (pin 4) to stay inside spec
+- `OUT` → **GPIO17** (pin 11), relying on the Pi's *internal 3.3V pull-up*
+- `GND` → common ground (pin 25)
 
-The output transistor only ever pulls the line down, so it can never present
-more than 3.3V to the GPIO. This is safe.
+The output transistor only ever pulls the line down, so whichever rail powers
+the sensor, the GPIO never sees more than 3.3V. This is safe either way.
+
+**This figurine runs its sensor from 3V3** and it triggers reliably at the
+distance the magnet sits. Pin 1 is already taken by the amp's `Vi2c`, so the
+sensor uses pin 17. Under-spec hall parts lose sensitivity before they stop
+working outright, so if triggering ever gets unreliable, particularly with a
+weak magnet or a wider gap, moving `VCC` to pin 2 or 4 is the first thing to
+try and needs no change in software.
 
 Two variations:
 
