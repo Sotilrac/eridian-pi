@@ -135,15 +135,28 @@ main {
 .stat.is-warm .dot { background: var(--amber); box-shadow: 0 0 7px rgba(201, 162, 39, 0.5); }
 
 /* ---------- panels ---------- */
+/* Two independent columns rather than a grid: a grid would size its rows to
+   the tallest cell, so expanding the API panel on the right would shove the
+   synthesiser down on the left. Flex columns grow on their own. */
 .columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  display: flex;
+  align-items: flex-start;
   gap: 20px;
-  align-items: start;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.stack--left  { flex: 1.55 1 0; }
+.stack--right { flex: 1 1 0; }
+
 @media (max-width: 760px) {
-  .columns { grid-template-columns: minmax(0, 1fr); }
+  .columns { flex-direction: column; }
+  .stack--left, .stack--right { flex: 1 1 auto; width: 100%; }
 }
 
 .panel {
@@ -403,16 +416,7 @@ main {
   white-space: nowrap;
 }
 
-/* Bank and synthesiser stack in the left column; output sits alongside. */
-@media (min-width: 761px) {
-  .panel--bank { grid-column: 1; grid-row: 1; }
-  .panel--say  { grid-column: 1; grid-row: 2; }
-  .stack {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: start;
-  }
-}
+
 
 /* ---------- the ceiling gate ---------- */
 .gate { margin-top: 14px; }
@@ -533,12 +537,6 @@ main {
 
 
 /* ---------------- interface reference ---------------- */
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
 
 .panel--api { padding: 0; }
 
