@@ -45,6 +45,7 @@ def create_app(
             "current": current.name if current else None,
             "current_id": current_id,
             "magnet_present": controller.magnet_present,
+            "armed": controller.armed,
             "volume": amp.volume,
             "volume_max": amp.max_volume,
             "volume_cap": amp.configured_max_volume,
@@ -136,6 +137,15 @@ def create_app(
         except (ClipError, SpeechError) as exc:
             return jsonify({"error": str(exc)}), 400
         return jsonify({"job": job.id, "title": job.title, "status": job.status}), 202
+
+    @app.post("/api/arm")
+    def api_arm():
+        """Arm or disarm the magnet trigger. Manual controls are unaffected."""
+        payload = request.get_json(silent=True) or {}
+        value = payload.get("armed")
+        if not isinstance(value, bool):
+            return jsonify({"error": "expected {'armed': true|false}"}), 400
+        return jsonify({"armed": controller.set_armed(value)})
 
     @app.post("/api/stop")
     def api_stop():

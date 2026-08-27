@@ -110,16 +110,25 @@
         </div>
       </div>
 
+      <h2 class="panel__title">Magnet trigger</h2>
+      <div class="arm" id="arm">
+        <button type="button" class="arm__switch" id="arm-toggle" role="switch" aria-checked="true">
+          <span class="arm__track"><span class="arm__knob"></span></span>
+          <span class="arm__state" data-field="arm-state">Armed</span>
+        </button>
+      </div>
+      <p class="hint" id="arm-hint">
+        Lifting Rocky off the base plays a clip and loops it. Setting him
+        back down cuts it off; lifting again advances to the next.
+      </p>
+
       <h2 class="panel__title">Manual override</h2>
       <div class="actions">
         <button type="button" class="btn" id="trigger"><span class="dot"></span>Trigger</button>
         <button type="button" class="btn btn--alert" id="halt"><span class="dot"></span>Halt</button>
       </div>
 
-      <p class="hint">
-        Lifting Rocky off the base plays a clip and loops it. Setting him
-        back down cuts it off; lifting again advances to the next.
-      </p>
+      <p class="hint">Manual controls work whether or not the trigger is armed.</p>
     </section>
   </div>
 

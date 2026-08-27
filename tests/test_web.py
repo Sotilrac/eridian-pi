@@ -331,3 +331,21 @@ def test_the_page_carries_rocky_lines_for_the_placeholder(
     body = app.test_client().get("/").data
     assert b'id="rocky-lines"' in body
     assert b"Fist my bump." in body
+
+
+# -- arming ------------------------------------------------------------
+
+
+def test_state_reports_whether_the_trigger_is_armed(client):
+    assert client.get("/api/state").get_json()["armed"] is True
+
+
+def test_the_trigger_can_be_disarmed_and_rearmed(client):
+    assert client.post("/api/arm", json={"armed": False}).get_json() == {"armed": False}
+    assert client.get("/api/state").get_json()["armed"] is False
+    assert client.post("/api/arm", json={"armed": True}).get_json() == {"armed": True}
+
+
+def test_arming_rejects_anything_that_is_not_a_boolean(client):
+    for body in ({}, {"armed": "yes"}, {"armed": 1}, {"armed": None}):
+        assert client.post("/api/arm", json=body).status_code == 400

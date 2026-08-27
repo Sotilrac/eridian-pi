@@ -97,3 +97,35 @@ def test_the_null_amp_satisfies_the_protocol():
     amp.set_enabled(True)
     assert amp.enabled is True
     amp.close()
+
+
+# -- persistence hook --------------------------------------------------
+
+
+def test_a_volume_change_notifies_the_owner(make_amp, bus):
+    seen = []
+    amp = make_amp(initial_volume=20, on_change=seen.append)
+    amp.set_volume(30)
+    assert seen == [30]
+
+
+def test_setting_the_same_volume_does_not_notify(make_amp, bus):
+    seen = []
+    amp = make_amp(initial_volume=20, on_change=seen.append)
+    amp.set_volume(20)
+    assert seen == []
+
+
+def test_construction_does_not_notify(make_amp, bus):
+    seen = []
+    make_amp(initial_volume=20, on_change=seen.append)
+    assert seen == []
+
+
+def test_a_failing_hook_does_not_break_volume(make_amp, bus):
+    def boom(_level):
+        raise RuntimeError("disk full")
+
+    amp = make_amp(initial_volume=20, on_change=boom)
+    assert amp.set_volume(33) == 33
+    assert amp.volume == 33

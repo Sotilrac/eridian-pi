@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from .amp import Amplifier
@@ -35,7 +35,10 @@ class Controller:
         clips: Iterable[str] = (),
         repeat_gap_seconds: float = 1.0,
         magnet_present: bool = True,
+        armed: bool = True,
+        on_armed_change: Callable[[bool], None] | None = None,
     ) -> None:
+        self._on_armed_change = on_armed_change
         self._player = player
         self._amp = amp
         self._bag = ShuffleBag(clips)
@@ -44,6 +47,10 @@ class Controller:
         self._cond = threading.Condition()
         self._running = True
         self._magnet_present = magnet_present
+        #: While disarmed the sensor is read and reported but never acted on,
+        #: so the figurine can be handled without talking. Manual triggers and
+        #: previews still work: disarming silences the magnet, not the device.
+        self._armed = armed
         #: Bumped on every absent edge. The worker compares it to the value it
         #: started a session with, which is how "magnet came back and left
         #: again" becomes "advance to the next clip".
@@ -63,6 +70,38 @@ class Controller:
     def magnet_present(self) -> bool:
         with self._cond:
             return self._magnet_present
+
+    @property
+    def armed(self) -> bool:
+        with self._cond:
+            return self._armed
+
+    def set_armed(self, armed: bool) -> bool:
+        """Arm or disarm the magnet trigger.
+
+        Disarming abandons any clip the sensor started, so the figurine goes
+        quiet at once rather than finishing its loop.
+        """
+        armed = bool(armed)
+        with self._cond:
+            if armed == self._armed:
+                return armed
+            self._armed = armed
+            if not armed:
+                # Invalidate the running session and claim the generation, so
+                # the worker neither continues nor draws a fresh clip.
+                self._generation += 1
+                self._served = self._generation
+            self._cond.notify_all()
+        if not armed:
+            self._player.stop()
+        log.info("magnet trigger %s", "armed" if armed else "disarmed")
+        if self._on_armed_change is not None:
+            try:
+                self._on_armed_change(armed)
+            except Exception as exc:  # noqa: BLE001 - persistence is best effort
+                log.warning("arm change hook failed (%s)", exc)
+        return armed
 
     @property
     def is_playing(self) -> bool:
@@ -92,9 +131,13 @@ class Controller:
 
     # -- sensor edges ----------------------------------------------------
     def on_magnet_absent(self) -> None:
-        """Rocky was lifted: start the next clip."""
+        """Rocky was lifted: start the next clip, unless disarmed."""
         with self._cond:
             self._magnet_present = False
+            if not self._armed:
+                # Keep the reported state honest, but do not act on it.
+                self._served = self._generation
+                return
             self._generation += 1
             self._cond.notify_all()
         # Break the worker out of whatever it is playing so it redraws.
@@ -104,6 +147,10 @@ class Controller:
         """Rocky was set back down: silence, immediately."""
         with self._cond:
             self._magnet_present = True
+            if not self._armed:
+                # A preview may be playing; disarmed means the magnet is inert,
+                # so it must not cut that off.
+                return
             self._cond.notify_all()
         self._player.stop()
 
@@ -148,7 +195,9 @@ class Controller:
                 while (
                     self._running
                     and self._oneshot is None
-                    and (self._magnet_present or self._generation == self._served)
+                    and (
+                        self._magnet_present or not self._armed or self._generation == self._served
+                    )
                 ):
                     self._cond.wait()
                 if not self._running:
@@ -202,6 +251,7 @@ class Controller:
         """True while this session still owns the speaker. Caller holds the lock."""
         return (
             self._running
+            and self._armed
             and not self._magnet_present
             and self._generation == session
             and self._oneshot is None

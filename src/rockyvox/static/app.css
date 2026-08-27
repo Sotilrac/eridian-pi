@@ -473,3 +473,54 @@ main {
    never hides where the safe limit was. */
 .vol__seg.is-past-cap { background: rgba(201, 162, 39, 0.22); }
 .vol__seg.is-on.is-past-cap { background: var(--amber); }
+
+
+/* ---------------- magnet trigger switch ---------------- */
+.arm { margin: 4px 0 10px; }
+
+.arm__switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.arm__track {
+  position: relative;
+  width: 42px;
+  height: 18px;
+  border: 1px solid var(--fg-dim);
+  background: rgba(5, 7, 10, 0.6);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.arm__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--amber);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.arm__switch[aria-checked="true"] .arm__knob {
+  transform: translateX(24px);
+  background: var(--fg);
+}
+
+.arm__switch[aria-checked="true"] .arm__track { border-color: var(--fg); }
+
+.arm__switch.is-off .arm__track { border-color: var(--amber); }
+.arm__switch.is-off .arm__state { color: var(--amber); }
+
+.arm__switch:focus-visible { outline: 1px solid var(--fg); outline-offset: 3px; }
+.arm__switch:disabled { opacity: 0.5; cursor: default; }

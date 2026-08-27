@@ -215,7 +215,7 @@
       const isPlaying = state.playing && state.current_id === clip.id;
       const meta = [
         formatDuration(clip.duration),
-        clip.locked ? "built-in · locked" : `${Math.round(clip.size / 1024)}KB`,
+        clip.locked ? "built-in" : `${Math.round(clip.size / 1024)}KB`,
       ].join(" · ");
 
       const actions = [actionButton("Play", () => preview(clip.id))];
@@ -274,6 +274,7 @@
   function renderState(state) {
     setStat("stat-magnet", state.magnet_present ? "is-live" : "is-warm",
       state.magnet_present ? "Seated" : "Lifted");
+    paintArm(state.armed);
     setStat("stat-playback", state.playing ? "is-live" : "", state.playing ? "Speaking" : "Silent");
     setStat("stat-amp", state.amp_online ? "is-live" : "is-alert",
       state.amp_online ? "Online" : "No I2C");
@@ -288,6 +289,40 @@
     state.jobs = state.jobs.filter((job) => !dismissed.has(job.id));
     renderClips(state);
   }
+
+  /* ---------------- magnet trigger ---------------- */
+  let armed = true;
+  const armToggle = $("#arm-toggle");
+  const armHint = $("#arm-hint");
+
+  function paintArm(value) {
+    armed = value;
+    armToggle.setAttribute("aria-checked", String(value));
+    armToggle.classList.toggle("is-off", !value);
+    setField("arm-state", value ? "Armed" : "Disarmed");
+    armHint.textContent = value
+      ? "Lifting Rocky off the base plays a clip and loops it. Setting him back down cuts it off; lifting again advances to the next."
+      : "The magnet is ignored. Rocky can be picked up without speaking.";
+  }
+
+  armToggle.addEventListener("click", async () => {
+    const next = !armed;
+    armToggle.disabled = true;
+    try {
+      const r = await api("/api/arm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ armed: next }),
+      });
+      paintArm(r.armed);
+      say(r.armed ? "Magnet trigger armed." : "Magnet trigger disarmed.", true);
+    } catch (err) {
+      say(err.message);
+    } finally {
+      armToggle.disabled = false;
+      refresh();
+    }
+  });
 
   let refreshing = false;
   async function refresh() {

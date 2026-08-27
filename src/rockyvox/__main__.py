@@ -7,6 +7,7 @@ import json
 import logging
 import signal
 import sys
+import threading
 from pathlib import Path
 
 from .amp import Max9744
@@ -25,6 +26,34 @@ def _read_state(path: Path) -> dict:
         return json.loads(path.read_text())
     except (OSError, ValueError):
         return {}
+
+
+class _Debounced:
+    """Coalesce rapid calls into one, `delay` seconds after the last.
+
+    The volume slider fires every 120ms while dragging, and this runs on an
+    SD card, so each drag should cost one write rather than a dozen.
+    """
+
+    def __init__(self, delay: float, fn) -> None:
+        self._delay = delay
+        self._fn = fn
+        self._lock = threading.Lock()
+        self._timer: threading.Timer | None = None
+
+    def __call__(self, *_args) -> None:
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+            self._timer = threading.Timer(self._delay, self._fn)
+            self._timer.daemon = True
+            self._timer.start()
+
+    def cancel(self) -> None:
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
 
 
 def _write_state(path: Path, data: dict) -> None:
@@ -49,16 +78,26 @@ def main(argv: list[str] | None = None) -> int:
     config: Config = load_config(args.config)
     saved = _read_state(config.state_file)
 
+    controller: Controller | None = None
+
+    def persist_state() -> None:
+        """Save what should outlive a power cut, not just a clean shutdown."""
+        data = {"volume": amp.volume}
+        if controller is not None:
+            data["armed"] = controller.armed
+        _write_state(config.state_file, data)
+
+    save_soon = _Debounced(2.0, persist_state)
+
     amp = Max9744(
         bus=config.i2c_bus,
         address=config.amp_address,
         max_volume=config.max_volume,
         initial_volume=int(saved.get("volume", config.default_volume)),
         shutdown_pin=config.shutdown_pin,
+        on_change=save_soon,
     )
     player = AplayPlayer(device=config.alsa_device)
-
-    controller: Controller | None = None
 
     def on_library_change() -> None:
         if controller is not None:
@@ -79,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
         clips=library.paths(),
         repeat_gap_seconds=config.repeat_gap_seconds,
         magnet_present=True,
+        armed=bool(saved.get("armed", True)),
+        on_armed_change=save_soon,
     )
 
     sensor = create_sensor(
@@ -104,7 +145,8 @@ def main(argv: list[str] | None = None) -> int:
 
     def shutdown(signum, _frame):
         log.info("signal %d received, shutting down", signum)
-        _write_state(config.state_file, {"volume": amp.volume})
+        save_soon.cancel()
+        persist_state()
         controller.close()
         sensor.close()
         library.close()

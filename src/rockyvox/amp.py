@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Callable
 from typing import Protocol
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,12 @@ class Max9744:
         max_volume: int = VOLUME_MAX,
         initial_volume: int = 30,
         shutdown_pin: int | None = None,
+        on_change: Callable[[int], None] | None = None,
     ) -> None:
+        #: Called with the new level whenever the volume actually moves, so
+        #: the caller can persist it. A figurine gets unplugged rather than
+        #: shut down, so waiting for SIGTERM to save loses the setting.
+        self._on_change = on_change
         self._address = address
         self._bus_number = bus
         #: The cap from config, and the cap currently in force. They differ
@@ -129,18 +135,31 @@ class Max9744:
         """Write a clamped 0-63 level to the amp. Returns the level applied."""
         level = self._clamp(value)
         with self._lock:
+            changed = level != self._volume
             self._volume = level
             if self._bus is None:
                 self._online = False
-                return level
-            try:
-                self._bus.write_byte(self._address, level & 0x3F)
-                self._online = True
-            except OSError as exc:
-                if self._online:
-                    log.warning("MAX9744 at 0x%02x not responding (%s)", self._address, exc)
-                self._online = False
+            else:
+                try:
+                    self._bus.write_byte(self._address, level & 0x3F)
+                    self._online = True
+                except OSError as exc:
+                    if self._online:
+                        log.warning("MAX9744 at 0x%02x not responding (%s)", self._address, exc)
+                    self._online = False
+        # Outside the lock: the hook writes a file and must not block I2C.
+        if changed:
+            self._notify(level)
         return level
+
+    def _notify(self, level: int) -> None:
+        """Tell the owner the level moved. Never let that break playback."""
+        if self._on_change is None:
+            return
+        try:
+            self._on_change(level)
+        except Exception as exc:  # noqa: BLE001 - persistence is best effort
+            log.warning("volume change hook failed (%s)", exc)
 
     def set_enabled(self, enabled: bool) -> None:
         """Drive SHDN, if wired. Silences idle class-D hiss between clips."""
