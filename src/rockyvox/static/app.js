@@ -319,33 +319,6 @@
     }
   });
 
-  /* ---------------- API panel height ---------------- */
-  // Cap the reference so opening it can never make the right column taller
-  // than the left. Measured rather than guessed, since the synthesiser panel
-  // changes height with the viewport.
-  const apiDetails = $("#api-docs");
-  const apiBody = apiDetails && apiDetails.querySelector(".api__body");
-  const apiSummary = apiDetails && apiDetails.querySelector(".api__summary");
-  const sayPanel = document.querySelector(".panel--say");
-
-  function fitApi() {
-    if (!apiBody || !sayPanel || !apiSummary) return;
-    if (window.matchMedia("(max-width: 760px)").matches) {
-      apiBody.style.maxHeight = "";
-      return;
-    }
-    const room = sayPanel.getBoundingClientRect().height
-      - apiSummary.getBoundingClientRect().height
-      - 18;
-    apiBody.style.maxHeight = `${Math.max(90, Math.round(room))}px`;
-  }
-
-  if (apiDetails) {
-    apiDetails.addEventListener("toggle", fitApi);
-    window.addEventListener("resize", fitApi);
-    fitApi();
-  }
-
   let refreshing = false;
   async function refresh() {
     if (refreshing) return;

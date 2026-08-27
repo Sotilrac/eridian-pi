@@ -571,13 +571,7 @@ main {
 .api__summary:hover .api__chev { border-color: var(--fg); }
 .api__summary:focus-visible { outline: 1px solid var(--fg); outline-offset: -3px; }
 
-/* Bounded so the box never outgrows the panel beside it; the list scrolls.
-   The exact ceiling is measured in app.js against the synthesiser panel. */
-.api__body {
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 0 20px 18px;
-}
+.api__body { padding: 0 20px 18px; }
 
 .api__note { margin: 0 0 12px; }
 .api__note:last-child { margin: 12px 0 0; }
@@ -620,7 +614,3 @@ main {
 
 .api__m--get { color: var(--fg-dim); }
 .api__m--del { color: var(--red); border-color: rgba(226, 64, 44, 0.4); }
-
-.api__body::-webkit-scrollbar { width: 6px; }
-.api__body::-webkit-scrollbar-track { background: transparent; }
-.api__body::-webkit-scrollbar-thumb { background: var(--line); }
