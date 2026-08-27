@@ -93,9 +93,9 @@ the Pi's own analog output does.
 Per channel:
 
 ```
-  GPIO18 ──[ 270R ]──┬──[ 10uF ]──▶ MAX9744 L in
-                     │   (+ toward the resistor)
-                  [ 33nF ]
+  GPIO18 ──[ 220R ]──┬──▶ MAX9744 L in
+                     │
+                  [ 44nF ]
                      │
                     GND
 
@@ -323,3 +323,46 @@ make volume V=45   # audibly louder
 | Talks when seated, quiet when lifted | set `magnet_present_is_low = false` |
 | Never triggers | flip the magnet over (unipolar sensors need one pole) |
 | Retriggers on a knock | raise `bounce_seconds` |
+
+
+## PWM into the MAX9744: what actually worked
+
+Built and verified on 2026-08-27, driving a 4Ω speaker from one channel.
+
+**One channel is enough.** The figurine has a single speaker and ingest
+already downmixes to mono, so only GPIO18 is wired. GPIO19 is left alone.
+
+**No DC blocking capacitor is needed.** The Adafruit board has input
+coupling caps of its own; their guide says so directly: "The inputs do have
+blocking capacitors ... it's OK to connect them up directly without extra
+audio blocking caps." That reduces the filter to two components.
+
+```
+  Pi pin 12 (GPIO18) ──[ 220R ]──┬──▶ MAX9744 L in
+                                 │
+                              [ 44nF ]
+                                 │
+  Pi pin 6  (GND) ───────────────┴──▶ MAX9744 GND
+```
+
+Pick R and C so that `R x C` is near 9µs; anything from 5µs to 20µs sounds
+fine for speech. 220R with 44nF gives a 16.5kHz corner, near-identical to
+the filter on the Pi's own analog output.
+
+**Persist the PWM volume or it comes back at full scale.** The `Headphones`
+card has a real ALSA mixer, unlike the PCM5102A. `alsa-restore` reapplies a
+saved level at boot, and the stock default is 0dB, which is very loud into
+a 20W amplifier. Set it and store it:
+
+```sh
+sudo amixer -c Headphones sset PCM -- -2500   # note the -- before a negative
+sudo alsactl store
+```
+
+The `--` matters: without it `amixer` parses `-2500` as a command-line flag
+and silently does nothing.
+
+**An amp in analog mode is fine here.** With the `Analog`/`AD1`/`AD2`
+jumpers closed the volume comes from the pot, `/api/state` reports
+`amp_online: false`, and the web UI's volume slider does nothing. The
+service itself runs normally: every I2C call fails soft by design.
