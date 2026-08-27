@@ -121,21 +121,25 @@ that going in.
 One row per wire, ordered by physical header pin so it can be worked
 through top to bottom. A dot means that device takes nothing from this pin.
 
-| Pi pin | BCM | MAX9744 | PCM5102A | Hall sensor | Purpose |
-|---|---|---|---|---|---|
-| 1 | 3V3 | `Vi2c` | · | · | I2C level reference. **3.3V, never 5V** |
-| 2 | 5V | · | `VIN` | · | DAC power |
-| 3 | GPIO2 | `SDA` | · | · | volume data |
-| 4 | 5V | · | · | `VCC` | sensor power, see the voltage note below |
-| 5 | GPIO3 | `SCL` | · | · | volume clock |
-| 6 | GND | · | `GND` | · | DAC ground |
-| 9 | GND | `GND` | · | · | amp ground, and the ground bond |
-| 11 | GPIO17 | · | · | `OUT` | trigger input, internal pull-up |
-| 12 | GPIO18 | · | `BCK` | · | I2S bit clock |
-| 13 | GPIO27 | `SHDN` *(optional)* | · | · | mutes the amp between clips |
-| 25 | GND | · | · | `GND` | sensor ground |
-| 35 | GPIO19 | · | `LRCK` / `LCK` | · | I2S word select |
-| 40 | GPIO21 | · | `DIN` | · | I2S data |
+The `PWM` column is the build that is actually in the figurine. The `I2S`
+column is the alternative if a PCM5102A is ever fitted. Wire one or the
+other, never both, since they share GPIO18.
+
+| Pi pin | BCM | MAX9744 | PWM (built) | I2S (alt) | Hall sensor | Purpose |
+|---|---|---|---|---|---|---|
+| 1 | 3V3 | `Vi2c` | · | · | · | I2C level reference. **3.3V, never 5V**. Only needed in I2C mode |
+| 2 | 5V | · | · | `VIN` | · | DAC power |
+| 3 | GPIO2 | `SDA` | · | · | · | volume data, I2C mode only |
+| 4 | 5V | · | · | · | `VCC` | sensor power, see the voltage note below |
+| 5 | GPIO3 | `SCL` | · | · | · | volume clock, I2C mode only |
+| 6 | GND | · | filter ground | `GND` | · | return for the RC filter |
+| 9 | GND | `GND` | · | · | · | amp ground, and the ground bond |
+| 11 | GPIO17 | · | · | · | `OUT` | trigger input, internal pull-up |
+| 12 | GPIO18 | `L` in | **220R + 44nF** | `BCK` | · | the audio itself |
+| 13 | GPIO27 | `SHDN` *(optional)* | · | · | · | mutes the amp between clips |
+| 25 | GND | · | · | · | `GND` | sensor ground |
+| 35 | GPIO19 | · | unused | `LRCK` / `LCK` | · | second PWM channel, not wired |
+| 40 | GPIO21 | · | · | `DIN` | · | I2S data |
 
 Not on the header, because it does not touch the Pi:
 
@@ -345,9 +349,23 @@ audio blocking caps." That reduces the filter to two components.
   Pi pin 6  (GND) ───────────────┴──▶ MAX9744 GND
 ```
 
-Pick R and C so that `R x C` is near 9µs; anything from 5µs to 20µs sounds
-fine for speech. 220R with 44nF gives a 16.5kHz corner, near-identical to
-the filter on the Pi's own analog output.
+### Parts actually used
+
+| Part | Value | Notes |
+|---|---|---|
+| R | 220Ω | anything 180Ω to 470Ω works |
+| C | 44nF | two 22nF ceramics in parallel, both marked `223` |
+
+A ceramic marked `223` is 22nF: two significant digits, then the number of
+zeros, in picofarads. Two in parallel add to 44nF.
+
+Pick R and C so that `R x C` lands near 9µs. Anything from 5µs to 20µs
+sounds fine for speech. 220Ω with 44nF puts the corner at 16.5kHz, which is
+close to the filter on the Pi's own analog output. Below about 5kHz the
+result goes muffled; above about 30kHz too much of the PWM carrier reaches
+the amplifier.
+
+If only one 22nF is to hand, pair it with 390Ω or 470Ω instead.
 
 **Persist the PWM volume or it comes back at full scale.** The `Headphones`
 card has a real ALSA mixer, unlike the PCM5102A. `alsa-restore` reapplies a
@@ -366,3 +384,51 @@ and silently does nothing.
 jumpers closed the volume comes from the pot, `/api/state` reports
 `amp_online: false`, and the web UI's volume slider does nothing. The
 service itself runs normally: every I2C call fails soft by design.
+
+
+## Getting I2C volume back
+
+The amp shipped in digital mode and was converted to analog, so the pot sets
+the level and the web UI's volume slider does nothing. Two ways back.
+
+### Option 1: rewire for I2C
+
+Reverses the analog conversion and gives the service real control over the
+64-step hardware volume, which is what `amp.py` and the uncapping gate were
+written against.
+
+1. Wick open all three solder jumpers: `Analog`, `AD1`, `AD2`. All three,
+   not just the first. Any one left closed keeps the chip in analog mode.
+2. Remove the potentiometer from the `Pot Vol` pads. With `Analog` open it
+   is inert anyway, but Adafruit's guide says not to fit it in digital mode
+   and there is no reason to leave it there.
+3. Wire four pins: Pi 1 → `Vi2c`, Pi 3 → `SDA`, Pi 5 → `SCL`, Pi 9 → `GND`.
+   `Vi2c` takes 3.3V. Never 5V.
+4. `make i2c-scan`. `0x4b` has to appear in the grid before anything else
+   will work. `AD1` and `AD2` are the address select pins, and leaving both
+   open is what puts the chip at `0x4b`.
+5. `make volume V=40`.
+
+The amp comes up at minimum volume in digital mode and stays there until a
+volume byte arrives, so silence between step 3 and step 5 is expected. The
+service writes `default_volume` at startup once the amp answers.
+
+After this the Pi has two volume controls in series: the ALSA `PCM` mixer on
+the PWM card, and the MAX9744 itself. Park ALSA at a fixed level and let the
+web UI drive the amp:
+
+```sh
+sudo amixer -c Headphones sset PCM -- -600
+sudo alsactl store
+```
+
+### Option 2: point the slider at ALSA
+
+No soldering. The PWM card has a real ALSA mixer with a 106dB range, which
+the PCM5102A never did, and that is enough control for a figurine. The web
+slider would write to `amixer` instead of the I2C bus, and the amp's pot
+would set the ceiling once and then be left alone.
+
+This needs a change in `amp.py` rather than a wiring change, and it leaves
+`amp_online` permanently false. Worth it if the amp is staying in analog
+mode.
