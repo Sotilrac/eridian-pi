@@ -5,8 +5,10 @@
 PI       ?= erid
 APP_DIR  ?= /opt/rocky
 PORT     ?= 8080
-# How audio leaves the Pi: i2s (DAC board), usb (sound card), pwm (RC filter).
-AUDIO    ?= i2s
+# How audio leaves the Pi: pwm (RC filter, as built), i2s (DAC board),
+# usb (sound card). Reprovisioning with the wrong one rewrites the overlay
+# block and takes the working audio with it.
+AUDIO    ?= pwm
 VENV     ?= .venv
 PY       := $(VENV)/bin/python
 SSH      := ssh $(PI)

@@ -10,7 +10,7 @@ from rockyvox.config import Config, load_config
 def test_a_missing_file_yields_the_defaults(tmp_path):
     config = load_config(tmp_path / "absent.toml")
     assert config == Config()
-    assert config.sensor_pin == 17
+    assert config.sensor_pin == 24
     assert config.amp_address == 0x4B
     assert config.repeat_gap_seconds == 1.0
 
@@ -64,7 +64,7 @@ def test_allowed_extensions_become_a_tuple(tmp_path):
 def test_the_shipped_example_config_parses():
     example = Path(__file__).resolve().parents[1] / "deploy" / "config.toml.example"
     config = load_config(example)
-    assert config.sensor_pin == 17
+    assert config.sensor_pin == 24
     assert config.amp_address == 0x4B
     assert config.max_volume == 45
     assert config.clips_dir == Path("/srv/rocky/clips")

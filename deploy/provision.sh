@@ -16,7 +16,7 @@ RUN_USER=${RUN_USER:-rocky}
 #   i2s  PCM5102A-style DAC on GPIO18/19/21   (best quality)
 #   usb  USB sound card on the OTG port       (no soldering)
 #   pwm  GPIO18/19 through an RC filter       (no extra board)
-AUDIO=${AUDIO:-i2s}
+AUDIO=${AUDIO:-pwm}
 
 case "$AUDIO" in
   i2s | usb | pwm) ;;

@@ -7,7 +7,9 @@ default_dir = "/srv/rocky/default"
 state_file  = "/srv/rocky/state.json"
 
 # --- hall effect sensor ----------------------------------------------
-sensor_pin = 17
+# Pins 17/18/20 (3V3, GPIO24, GND) keep the sensor's three wires together
+# at one corner of the header. Pin 1 is taken by the amp's Vi2c.
+sensor_pin = 24
 # Open-collector halls (A3144, US5881) pull the line LOW with a magnet
 # present. Set false if your sensor, or your magnet's pole, is the other
 # way round -- the symptom is Rocky talking while seated and going quiet
@@ -28,9 +30,10 @@ mono_output = true
 # --- MAX9744 amplifier -----------------------------------------------
 i2c_bus = 1
 amp_address = 0x4B
-# The amp reaches 20W into 4 ohms at 12V; a 10W speaker will not survive
-# that. This caps the digital side. Keep the board's trim pot backed off
-# as well, and prefer a 9V supply over 12V.
+# The amp reaches close to 20W into 4 ohms on the 12V it is supplied with,
+# and the speaker is rated for 10W, so this cap is what keeps the speaker
+# alive. Set it by ear against the loudest clip in the bank. Dropping the
+# supply to 9V roughly halves the power and makes the cap less critical.
 max_volume = 45
 default_volume = 30
 # Optional GPIO wired to the MAX9744 SHDN pin. Mutes the amp between

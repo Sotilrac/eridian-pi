@@ -17,7 +17,9 @@ class Config:
     state_file: Path = Path("/srv/rocky/state.json")
 
     # --- hall effect sensor --------------------------------------------
-    sensor_pin: int = 17
+    #: Pins 17/18/20 put the sensor's three wires in one bundle at a corner
+    #: of the header. Pin 1 is taken by the amp's Vi2c.
+    sensor_pin: int = 24
     #: True when the sensor pulls the line LOW with the magnet present
     #: (open-collector halls such as the A3144). Flip to invert the trigger.
     magnet_present_is_low: bool = True
@@ -35,8 +37,9 @@ class Config:
     # --- MAX9744 amplifier ---------------------------------------------
     i2c_bus: int = 1
     amp_address: int = 0x4B
-    #: Ceiling for the 0-63 hardware volume. Keeps a 10W speaker alive on
-    #: an amp that can deliver 20W.
+    #: Ceiling for the 0-63 hardware volume. At the 12V the amp runs on it
+    #: can deliver close to its full 20W into 4 ohms, and the speaker is
+    #: rated for 10W, so this cap is the only thing protecting it.
     max_volume: int = 45
     default_volume: int = 30
     #: Optional GPIO wired to the MAX9744 SHDN pin; mutes the amp when idle
