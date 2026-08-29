@@ -5,13 +5,13 @@ that will otherwise waste an evening.
 
 ## As built
 
-This is the figurine that exists, not the reference design. Where the two
-differ, this section wins and the alternatives are further down.
+Describes the figurine that exists rather than the reference design. Where
+the two differ, this section wins and the alternatives are further down.
 
 ```
   Pi GPIO18 --[ 220R ]--+--> MAX9744 L in --> 4 ohm speaker
                         |
-                     [ 44nF ]
+                    [ 44nF ]
                         |
   Pi GND ---------------+--> MAX9744 GND
 
@@ -96,9 +96,9 @@ blocking caps." That reduces the filter to two components.
 ```
   Pi pin 12 (GPIO18) --[ 220R ]--+--> MAX9744 L in
                                  |
-                              [ 44nF ]
+                             [ 44nF ]
                                  |
-  Pi pin 6  (GND) --------------+---> MAX9744 GND
+  Pi pin 6  (GND) ---------------+--> MAX9744 GND
 ```
 
 | Part | Value | Notes |
@@ -154,8 +154,8 @@ that from `cmdline.txt` and rebooting frees the port and gives up the `usb0`
 network in exchange. Check with `ip -brief addr show usb0` before deciding.
 
 Provisioning will not touch `cmdline.txt` on your behalf. If it cannot find a
-USB sound card it says so and stops, rather than quietly leaving you with no
-audio device.
+USB sound card it says so and stops, rather than leaving you with no audio
+device.
 
 Ingest still writes 44.1kHz stereo WAV, and many cheap dongles are 48kHz mono
 only, so this backend needs the sample rate in `library.py` changed to match
@@ -246,7 +246,8 @@ PD spec, and plenty of chargers advertise 5V, 9V, 15V and 20V while skipping
 12V entirely; phone-oriented chargers are the usual offenders, laptop bricks
 usually have it. A trigger board asking for a profile the source does not
 advertise falls back to 5V, which the MAX9744 will run on (its minimum is
-4.5V) at roughly a sixth of the power. Quiet-but-working is the symptom.
+4.5V) at roughly a sixth of the power. The symptom is an amp that works but
+is far too quiet at any volume setting.
 
 The cable has to be a real USB-C to USB-C data cable. A C-to-A cable or a
 charge-only lead gives the trigger board nothing to negotiate over, and the
@@ -496,7 +497,7 @@ headless image does it, so provisioning writes
 for the chosen backend filled in, by *name* rather than index, so it survives
 the HDMI codec probing in a different order after an update.
 
-## What survives a power cut
+## State that outlives a power cut
 
 The figurine gets unplugged rather than shut down, so anything that only
 saved on SIGTERM would be lost every time. The volume level and the armed

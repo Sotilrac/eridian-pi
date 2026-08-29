@@ -30,7 +30,7 @@ help: ## Show this help
 # ---------------------------------------------------------------- local
 
 $(VENV): pyproject.toml
-	uv venv $(VENV)
+	uv venv --allow-existing $(VENV)
 	VIRTUAL_ENV=$(VENV) uv pip install -e '.[dev]'
 	@touch $(VENV)
 
