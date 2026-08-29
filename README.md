@@ -4,20 +4,21 @@ A talking *Project Hail Mary* figurine. Lift Rocky off his base and he says
 something; put him back and he stops mid-word; lift him again and he says
 something else.
 
-Inside the shell: a Raspberry Pi Zero W, an I2S DAC, a MAX9744 20W class-D
-amplifier, a 4Ω speaker and a hall effect sensor watching a magnet in the
-base. New lines are added over the LAN, either by uploading audio or by
-typing text for the on-board synthesiser.
+Inside the shell: a Raspberry Pi Zero W, a MAX9744 20W class-D amplifier on a
+12V USB-C PD supply, a 4 ohm speaker and a hall effect sensor watching a
+magnet in the base. New lines are added over the LAN, either by uploading
+audio or by typing text for the on-board synthesiser.
 
 ```
-  Pi ──I2S──▶ PCM5102A ──line──▶ MAX9744 ──▶ 4Ω speaker
-  Pi ──I2C──────────────────────▶ MAX9744    (volume only)
-  hall sensor ──▶ Pi GPIO17
+  Pi GPIO18 --[ 220R / 44nF ]--> MAX9744 --> 4 ohm speaker
+  Pi GPIO2/3 (I2C) ------------> MAX9744     volume only, at 0x4B
+  Hall sensor -----------------> Pi GPIO24
 ```
 
 A Zero W has no analog output, so something has to produce a line-level
-signal. An I2S DAC is the default; a USB sound card or a PWM pin through an
-RC filter both work too, and are one provisioning flag apart. See
+signal. This one filters a PWM pin into the amplifier, which costs two
+passive components and a little hiss. An I2S DAC board or a USB sound card
+are each one provisioning flag away. See
 [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ## Behaviour
@@ -36,22 +37,25 @@ cannot be deleted.
 ## Quickstart
 
 ```
-make provision     # packages, overlays, service; add AUDIO=usb or AUDIO=pwm
+make provision     # packages, overlays, service; add AUDIO=i2s or AUDIO=usb
 make shell         # then: sudo reboot, for the overlays
 make deploy        # push code and restart
 make open          # the control panel
 ```
 
-Wire it up first — [docs/HARDWARE.md](docs/HARDWARE.md) has the pinout and
-the three things that will otherwise waste an evening. The full procedure is
-in [docs/SETUP.md](docs/SETUP.md).
+Wire it up first. [docs/HARDWARE.md](docs/HARDWARE.md) has the pinout, the
+supply, and the parts that will otherwise waste an evening. The full
+procedure is in [docs/SETUP.md](docs/SETUP.md).
 
 ## Control panel
 
 `http://<hostname>.local:8080`, open on the LAN. Live status, a 64-segment
 volume bar mirroring the amp's 64 hardware steps, drag-and-drop upload, text
-to speech, per-clip audition, and a trigger button for testing without a
-magnet.
+to speech, per-clip audition, a trigger button for testing without a magnet,
+a toggle that disarms the magnet so the figurine can be handled in silence,
+and a collapsed panel documenting the API behind all of it. Volume and armed
+state are both persisted, because the figurine gets unplugged rather than
+shut down.
 
 ## Development
 
