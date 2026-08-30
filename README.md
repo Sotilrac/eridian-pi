@@ -14,7 +14,7 @@ deleted.
 
 ## BOM
 
-* Raspberry Pi Zero W
+* [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
 * [Adafruit MAX9744](https://www.adafruit.com/product/1752) 20W class-D
 amplifier
 * USB-C PD adapter
