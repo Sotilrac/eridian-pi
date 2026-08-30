@@ -26,16 +26,16 @@ class Config:
     bounce_seconds: float = 0.05
 
     # --- playback ------------------------------------------------------
-    #: Gap between repeats of the same clip while the magnet stays away.
+    #: Gap between repeats of the same clip while the block stays off.
     repeat_gap_seconds: float = 1.0
     alsa_device: str = "default"
 
     # --- MAX9744 amplifier ---------------------------------------------
     i2c_bus: int = 1
     amp_address: int = 0x4B
-    #: Ceiling for the 0-63 hardware volume. At the 12V the amp runs on it
-    #: can deliver close to its full 20W into 4 ohms, and the speaker is
-    #: rated for 10W, so this cap is the only thing protecting it.
+    #: Ceiling for the 0-63 hardware volume. On its 12V supply the amp can
+    #: deliver close to its full 20W into 4 ohms, and the speaker is rated
+    #: for 10W, so this cap is the only thing protecting it.
     max_volume: int = 45
     default_volume: int = 30
     #: Optional GPIO wired to the MAX9744 SHDN pin; mutes the amp when idle

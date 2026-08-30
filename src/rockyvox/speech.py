@@ -42,7 +42,7 @@ class Voice:
 
 
 #: One voice only. The plain formant translator is the closest thing to how
-#: Rocky actually sounds, and offering alternatives just invited worse ones.
+#: Rocky sounds, and offering alternatives just invited worse ones.
 VOICES: dict[str, Voice] = {
     v.id: v
     for v in (Voice(id="translator", label="Translator", voice="en-us", speed=175, pitch=50),)

@@ -83,7 +83,7 @@ class Controller:
         """Arm or disarm the magnet trigger.
 
         Disarming abandons any clip the sensor started, so the figurine goes
-        quiet at once rather than finishing its loop.
+        quiet at once instead of finishing its loop.
         """
         armed = bool(armed)
         with self._cond:
@@ -168,8 +168,8 @@ class Controller:
     def trigger_once(self) -> Path | None:
         """Draw and play the next clip once, as if the magnet had left.
 
-        Unlike a real pull there is no magnet to put back, so this plays a
-        single clip rather than repeating. Handy for testing with no hardware.
+        Unlike a real pull there is no magnet to put back, so this plays one
+        clip and stops. Handy for testing with no hardware.
         """
         clip = self._bag.draw()
         if clip is None:

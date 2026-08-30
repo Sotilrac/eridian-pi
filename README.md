@@ -39,7 +39,7 @@ Connections by Pi header pin.
   Pi GPIO3 (pin 5) -----------------> MAX9744 SCL
   Pi GND  (pin 9) ------------------> MAX9744 GND     the ground bond
 
-  USB-C PD source, 12V -------------> MAX9744 barrel jack, centre-positive
+  USB-C PD source, 12V -------------> MAX9744 PWR input terminal
 
   Pi 3V3   (pin 17) ----------------> hall sensor VCC
   Pi GPIO24 (pin 18) <-------------- hall sensor OUT
@@ -58,7 +58,7 @@ low-pass filtered into something the amp's line input will accept. 220 ohm with
 on GPIO18/19/21 with `dtoverlay=hifiberry-dac` could replace the filter with a
 16-bit line output.
 
-### MAX9744 Amp
+### MAX9744 amp
 
 Leave `Analog`, `AD1` and `AD2` all **open**. That keeps
 the chip in digital mode, where volume arrives over I2C, and `AD1`/`AD2` puts it
@@ -73,7 +73,7 @@ In digital mode the MAX9744 powers up at its lowest volume setting. The output
 stage idles and hisses, and no audio passes. `make i2c-scan` must show `0x4b`,
 then `make volume V=40` gives it gain.
 
-Note `i2cdetect` doesn't work for this chip, which takes a bare volume byte and
+`i2cdetect` doesn't work for this chip, which takes a bare volume byte and
 supports no reads. Write a byte instead:
 
 ```sh
@@ -118,11 +118,11 @@ Host erid
     IdentityFile ~/.ssh/id_rsa_rocky
 ```
 
-Point `Hostname` at the mDNS name rather than an address, or every `make`
+Point `Hostname` at the mDNS name, not an address, or every `make`
 target breaks the day the lease moves. Override with `make deploy PI=myhost`.
 
 Wire it up first, and leave the amp's supply unplugged until the wiring has
-been checked twice. A reversed speaker lead is survivable, a reversed supply
+been checked twice. A reversed speaker lead is survivable; a reversed supply
 is not. Then:
 
 ```bash
@@ -246,8 +246,7 @@ Bundled with it, under other terms:
 - `src/rockyvox/static/jetbrains-mono.woff2` is JetBrains Mono, Copyright 2020
   [The JetBrains Mono Project Authors](https://github.com/JetBrains/JetBrainsMono),
   licensed under the [SIL Open Font License 1.1](https://scripts.sil.org/OFL),
-  which permits redistribution. It is bundled rather than loaded from a CDN so
-  the figurine works with no route to the internet.
+  which permits redistribution.
 - `media/default/amaze1.mp3` is a short excerpt of Rocky's voice, used here as
   fair use: a few seconds, non-commercial, in a fan project that neither
   substitutes for the original nor competes with it. If you own it and would

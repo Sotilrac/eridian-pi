@@ -160,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     from waitress import create_server
 
     # create_server binds the socket; serve() would log "serving" a good eight
-    # seconds before the port actually answers on a Zero W.
+    # seconds before the port answers on a Zero W.
     server = create_server(app, host=config.host, port=config.port, threads=4)
     log.info("listening on http://%s:%d", config.host, config.port)
     server.run()

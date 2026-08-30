@@ -37,7 +37,7 @@ _LOUDNORM = "loudnorm=I=-16:TP=-1.5:LRA=11"
 #: source (espeak-ng output, for one) has no c1 for the pan to reference.
 _MONO_SUM = "aformat=channel_layouts=stereo,pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1"
 
-#: Downmix before normalising, so loudnorm targets what is actually heard.
+#: Downmix before normalising, so loudnorm targets what is heard.
 _FILTERS = f"{_MONO_SUM},{_LOUDNORM}"
 
 

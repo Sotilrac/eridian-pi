@@ -268,7 +268,7 @@ def channels_of(path: Path) -> tuple[bytes, bytes]:
 
 def test_a_stereo_clip_is_summed_so_one_speaker_hears_everything(library, tmp_path):
     # Rocky has a single speaker on a single amplifier channel. Without the
-    # downmix, everything panned right would simply never be heard.
+    # downmix, everything panned right would never be heard.
     source = stereo_tone(tmp_path, 300, 900)
     job = library.submit(source, "panned.wav")
     assert wait_for(lambda: job.status != "processing")

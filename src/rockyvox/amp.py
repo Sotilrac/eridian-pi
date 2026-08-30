@@ -55,7 +55,7 @@ class Max9744:
         shutdown_pin: int | None = None,
         on_change: Callable[[int], None] | None = None,
     ) -> None:
-        #: Called with the new level whenever the volume actually moves, so
+        #: Called with the new level whenever the volume moves, so
         #: the caller can persist it. A figurine gets unplugged rather than
         #: shut down, so waiting for SIGTERM to save loses the setting.
         self._on_change = on_change
