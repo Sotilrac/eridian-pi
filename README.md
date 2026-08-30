@@ -25,7 +25,7 @@ amplifier
 
 ## Wiring
 
-Every connection, by Pi header pin.
+Connections by Pi header pin.
 
 ```
   Pi GPIO18 (pin 12) --[ 220R ]--+--> MAX9744 L in --> 4 ohm speaker
@@ -46,8 +46,7 @@ Every connection, by Pi header pin.
   Pi GND   (pin 20) ----------------> hall sensor GND
 ```
 
-Audio is mono (speaker on the amp's left channel) and clips summed to mono at
-ingest so nothing is lost.
+Audio is mono (speaker on the amp's left channel).
 
 ### Rudimentary RC filter
 
@@ -178,7 +177,7 @@ Restart after editing: `make restart`.
 
 ## Development
 
-Nothing here needs a Pi. The hardware modules import their libraries lazily
+No Pi required. The hardware modules import their libraries lazily
 and the suite runs against fakes, with one test driving gpiozero's mock pin
 factory to prove the real pin edges map to the right callbacks.
 
