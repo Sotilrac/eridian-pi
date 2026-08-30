@@ -82,3 +82,22 @@ prove the pin edges map to the right callbacks. No Pi required.
 | `archive/` | files kept from the earlier setup |
 
 `make help` lists every target.
+
+## License
+
+The code is MIT, in [LICENSE](LICENSE). Three things bundled with it are not
+mine and keep their own terms:
+
+- `src/rockyvox/static/jetbrains-mono.woff2` is JetBrains Mono under the SIL
+  Open Font License 1.1, which permits redistribution. See
+  [FONT-LICENSE.txt](src/rockyvox/static/FONT-LICENSE.txt).
+- `media/default/amaze1.mp3` is a short excerpt of Rocky's voice, included as
+  the built-in clip so a fresh install boots with something to say. It is
+  used here as fair use: a few seconds, non-commercial, in a fan project that
+  neither substitutes for the original nor competes with it. If you own it
+  and would rather it were not here, open an issue and it goes.
+- The lines in `src/rockyvox/quotes.py` are quoted from *Project Hail Mary* by
+  Andy Weir, as placeholder text for the synthesiser's input box.
+
+*Project Hail Mary* and Rocky belong to Andy Weir. This is a fan project with
+no affiliation to, or endorsement from, the author or the film's producers.
