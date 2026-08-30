@@ -4,7 +4,6 @@ version = "1.0.0"
 description = "Talking Project Hail Mary figurine: hall-sensor triggered audio with a LAN upload UI"
 requires-python = ">=3.11"
 license = "MIT"
-license-files = ["LICENSE"]
 authors = [{ name = "Carlos Asmat" }]
 dependencies = ["flask>=3.0", "waitress>=3.0"]
 

@@ -16,7 +16,7 @@ V        ?= 30
 
 # rsync writes into /opt, so the remote side elevates. Passwordless sudo.
 RSYNC := rsync -az --delete --rsync-path="sudo rsync"
-PAYLOAD := src deploy media docs Makefile pyproject.toml README.md
+PAYLOAD := src deploy media Makefile pyproject.toml README.md
 
 .DEFAULT_GOAL := help
 .PHONY: help venv lint fmt test check hooks deploy provision restart stop logs \
@@ -73,7 +73,7 @@ deploy: ## Push the code to the Pi and restart the service
 	@$(wait_up)
 	@echo "deployed to http://$$($(SSH) hostname).local:$(PORT)"
 
-provision: ## Setup on the Pi; pick the audio path: make provision AUDIO=usb
+provision: ## Provision the Pi (AUDIO=pwm as built; i2s and usb also supported)
 	$(SSH) 'sudo mkdir -p $(APP_DIR) && sudo chown $$USER $(APP_DIR)'
 	$(RSYNC) --exclude '__pycache__' $(PAYLOAD) $(PI):$(APP_DIR)/
 	$(SSH) 'sudo AUDIO=$(AUDIO) $(APP_DIR)/deploy/provision.sh'

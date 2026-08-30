@@ -1,6 +1,6 @@
 [Unit]
 Description=Rocky Vox - hall-triggered audio for the Rocky figurine
-Documentation=file:/opt/rocky/docs/HARDWARE.md
+Documentation=file:/opt/rocky/README.md
 After=network-online.target sound.target
 Wants=network-online.target
 
