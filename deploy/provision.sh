@@ -12,7 +12,7 @@ DATA_DIR=${DATA_DIR:-/srv/rocky}
 CONF_DIR=${CONF_DIR:-/etc/rocky}
 SERVICE=rocky-vox.service
 RUN_USER=${RUN_USER:-rocky}
-# How audio leaves the Pi. See docs/HARDWARE.md.
+# How audio leaves the Pi. See the README.
 #   i2s  PCM5102A-style DAC on GPIO18/19/21   (best quality)
 #   usb  USB sound card on the OTG port       (no soldering)
 #   pwm  GPIO18/19 through an RC filter       (no extra board)
@@ -126,7 +126,7 @@ if source is None:
 # Match whatever the installed config asks for, so the built-in clip is
 # mixed the same way as every upload.
 config = load_config(Path("/etc/rocky/config.toml"))
-target = install_default_clip(source, Path(sys.argv[2]) / "default", config.mono_output)
+target = install_default_clip(source, Path(sys.argv[2]) / "default")
 print(f"    {source.name} -> {target}")
 PY
 chown -R "$RUN_USER:$RUN_USER" "$DATA_DIR"

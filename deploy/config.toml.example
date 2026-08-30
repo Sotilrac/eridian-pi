@@ -12,28 +12,22 @@ state_file  = "/srv/rocky/state.json"
 sensor_pin = 24
 # Open-collector halls (A3144, US5881) pull the line LOW with a magnet
 # present. Set false if your sensor, or your magnet's pole, is the other
-# way round -- the symptom is Rocky talking while seated and going quiet
-# when lifted.
+# way round -- the symptom is Rocky talking with the block on the base and
+# going quiet when it comes off.
 magnet_present_is_low = true
 bounce_seconds = 0.05
 
 # --- playback --------------------------------------------------------
-# Pause between repeats of the same clip while the figurine stays lifted.
+# Pause between repeats of the same clip while the block stays off.
 repeat_gap_seconds = 1.0
 alsa_device = "default"
-# The figurine drives one speaker from one amplifier channel, so left and
-# right are summed into both channels at ingest. Without this, anything
-# panned right in a stereo clip is simply never heard. Set false only if a
-# second speaker is wired to the amp's other channel.
-mono_output = true
 
 # --- MAX9744 amplifier -----------------------------------------------
 i2c_bus = 1
 amp_address = 0x4B
 # The amp reaches close to 20W into 4 ohms on the 12V it is supplied with,
 # and the speaker is rated for 10W, so this cap is what keeps the speaker
-# alive. Set it by ear against the loudest clip in the bank. Dropping the
-# supply to 9V roughly halves the power and makes the cap less critical.
+# alive. Set it by ear against the loudest clip in the bank.
 max_volume = 45
 default_volume = 30
 # Optional GPIO wired to the MAX9744 SHDN pin. Mutes the amp between

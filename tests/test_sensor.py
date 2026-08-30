@@ -2,7 +2,7 @@
 
 These prove the electrical convention maps to the right callbacks: an
 open-collector hall pulls the line LOW with a magnet present, so LOW must
-mean "seated" and HIGH must mean "lifted".
+mean "block on the base" and HIGH must mean "block pulled off".
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def test_a_low_line_reads_as_a_seated_magnet(events, pin_factory):
 
 
 def test_the_startup_state_does_not_fire_an_edge(events, pin_factory):
-    # A Pi that boots while Rocky is lifted must come up quiet.
+    # A Pi that boots with the block already off must come up quiet.
     sensor = build(events, pin_factory)
     try:
         assert sensor.magnet_present is False

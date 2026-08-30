@@ -66,7 +66,9 @@ def test_an_upload_is_transcoded_to_wav(library, tone):
     assert clip.locked is False
 
 
-def test_the_transcode_is_44100_stereo_16bit(library, tone):
+def test_the_transcode_is_44100_16bit(library, tone):
+    # Two channels because the card wants two; both carry the same mono mix,
+    # which test_a_stereo_clip_is_summed_so_one_speaker_hears_everything pins.
     ingest(library, tone)
     with wave.open(str(library.clips()[0].path), "rb") as handle:
         assert handle.getframerate() == 44100
@@ -277,25 +279,6 @@ def test_a_stereo_clip_is_summed_so_one_speaker_hears_everything(library, tmp_pa
     assert set(left) != {0}, "and it must not be silence"
 
 
-def test_mono_output_can_be_turned_off_for_a_second_speaker(tmp_path):
-    lib = Library(
-        clips_dir=tmp_path / "clips",
-        default_dir=tmp_path / "default",
-        allowed_extensions=EXTENSIONS,
-        mono_output=False,
-    )
-    try:
-        source = stereo_tone(tmp_path, 300, 900)
-        job = lib.submit(source, "panned.wav")
-        assert wait_for(lambda: job.status != "processing")
-        assert job.status == "ready", job.error
-
-        left, right = channels_of(lib.clips()[0].path)
-        assert left != right, "stereo separation should survive"
-    finally:
-        lib.close()
-
-
 def test_a_mono_source_survives_the_downmix(library, tone, tmp_path):
     # espeak-ng emits mono, which has no right channel for the pan to sum.
     mono = tmp_path / "mono.wav"
@@ -315,15 +298,17 @@ def test_a_mono_source_survives_the_downmix(library, tone, tmp_path):
 
 def test_changing_the_mix_re_transcodes_the_built_in_clip(library, tone):
     # The source never changes, so an mtime check alone would leave the
-    # built-in clip mixed the old way for ever.
-    install_default_clip(tone, library.default_dir, mono_output=True)
+    # built-in clip mixed the old way for ever after the filters are edited.
+    install_default_clip(tone, library.default_dir)
     first = library.default_clip().path.stat().st_mtime_ns
 
-    install_default_clip(tone, library.default_dir, mono_output=False)
+    # Stand in for an edit to the filter chain.
+    (library.default_dir / ".recipe").write_text("some,other,filters")
+    install_default_clip(tone, library.default_dir)
     assert library.default_clip().path.stat().st_mtime_ns != first
 
     stable = library.default_clip().path.stat().st_mtime_ns
-    install_default_clip(tone, library.default_dir, mono_output=False)
+    install_default_clip(tone, library.default_dir)
     assert library.default_clip().path.stat().st_mtime_ns == stable
 
 

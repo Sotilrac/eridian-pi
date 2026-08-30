@@ -1,7 +1,8 @@
 """The trigger state machine.
 
-Lift Rocky and he speaks; keep him lifted and the same clip loops; set him
-down and he stops mid-word; lift him again and he says something new.
+Pull the block off and Rocky speaks; leave it off and the same clip loops;
+put it back and he stops mid-word; pull it off again and he says something
+new.
 """
 
 from __future__ import annotations
@@ -152,7 +153,7 @@ def test_sync_magnet_adopts_the_reading_without_playing(controller, player):
     controller.sync_magnet(present=False)
 
     assert controller.magnet_present is False
-    player.expect_silence()  # booting while lifted must not start a clip
+    player.expect_silence()  # booting with the block off must not start a clip
 
 
 def test_a_lift_after_sync_still_triggers(controller, player):
@@ -188,7 +189,7 @@ def test_rearming_does_not_replay_the_clip_that_was_cut_off(controller, player):
     player.next_start()
     controller.set_armed(False)
     controller.set_armed(True)
-    # Still lifted, but no fresh edge has happened, so it stays silent.
+    # Block still off, but no fresh edge has happened, so it stays silent.
     player.expect_silence()
 
 

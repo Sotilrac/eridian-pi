@@ -108,7 +108,6 @@ def main(argv: list[str] | None = None) -> int:
         default_dir=config.default_dir,
         allowed_extensions=config.allowed_extensions,
         max_clip_seconds=config.max_clip_seconds,
-        mono_output=config.mono_output,
         on_change=on_library_change,
     )
 
