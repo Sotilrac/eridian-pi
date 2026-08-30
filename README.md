@@ -1,12 +1,13 @@
 # Rocky Vox
 
-A talking *Project Hail Mary* figurine. Rocky holds a block labelled
-`Pull me!!! Statement`. Pull it and he says something; push it back and he
-stops mid-word; pull it again and he says something else.
+A talking *Project Hail Mary* figurine. A magnetic block labelled
+`Pull me!!! Statement` sits on the base. Pull it off and Rocky says
+something; put it back on the base and he stops mid-word; pull it off again
+and he says something else.
 
 Inside the shell: a Raspberry Pi Zero W, a MAX9744 20W class-D amplifier on a
-12V USB-C PD supply, a 4 ohm speaker and a hall effect sensor watching a
-magnet in the block. New lines are added over the LAN, either by uploading
+12V USB-C PD supply, a 4 ohm speaker and a hall effect sensor watching the
+block's magnet. New lines are added over the LAN, either by uploading
 audio or by typing text for the on-board synthesiser.
 
 ```
@@ -25,10 +26,10 @@ are each one provisioning flag away. See
 
 | Event | Response |
 |---|---|
-| Block pulled, magnet leaves | draw the next clip from the shuffle bag and play it |
-| Block still out | when the clip ends, pause a second, replay the same clip |
-| Block pushed back | stop immediately, mid-word |
-| Block pulled again | a *different* clip |
+| Block pulled off, magnet leaves | draw the next clip from the shuffle bag and play it |
+| Block still off | when the clip ends, pause a second, replay the same clip |
+| Block put back on the base | stop immediately, mid-word |
+| Block pulled off again | a *different* clip |
 
 The shuffle bag plays every clip once before any clip plays twice, and never
 repeats across a reshuffle. The built-in clip is locked into the rotation and

@@ -1,7 +1,7 @@
 """The trigger state machine.
 
-Rocky holds a block labelled "Pull me!!! Statement" with a magnet in it, and
-the hall sensor sits in the body behind where it seats.
+A magnetic block labelled "Pull me!!! Statement" is held to the base by its
+own magnet, with the hall sensor where the block seats.
 
   * magnet ABSENT edge  -> draw the next clip from the shuffle bag, play it
   * still ABSENT        -> after it ends, pause, then replay *the same* clip
@@ -9,7 +9,7 @@ the hall sensor sits in the body behind where it seats.
   * next ABSENT edge    -> draw a *new* clip and start over
 
 The gap between repeats waits on the same event that the sensor callbacks
-signal, so pushing the block back during that gap is honoured at once rather
+signal, so putting the block back during that gap is honoured at once rather
 than up to a second later.
 """
 
@@ -55,11 +55,11 @@ class Controller:
         #: previews still work: disarming silences the block, not the device.
         self._armed = armed
         #: Bumped on every absent edge. The worker compares it to the value it
-        #: started a session with, which is how "block went back in and came
-        #: out again" becomes "advance to the next clip".
+        #: started a session with, which is how "block went back on and came
+        #: off again" becomes "advance to the next clip".
         self._generation = 0
         #: The generation the worker has already taken a turn on. A session
-        #: that ends while the block is still out -- because the clip could
+        #: that ends while the block is still off -- because the clip could
         #: not be played, or the library is empty -- must stay quiet until a
         #: fresh edge arrives rather than grabbing the next clip.
         self._served = 0
@@ -125,8 +125,8 @@ class Controller:
     def sync_magnet(self, present: bool) -> None:
         """Adopt the sensor's reading at startup without treating it as an edge.
 
-        A Pi that boots with the block already pulled should report it out,
-        but must not start talking thirty seconds after power-on.
+        A Pi that boots with the block already off should report it off, but
+        must not start talking thirty seconds after power-on.
         """
         with self._cond:
             self._magnet_present = present
@@ -134,7 +134,7 @@ class Controller:
 
     # -- sensor edges ----------------------------------------------------
     def on_magnet_absent(self) -> None:
-        """The block was pulled: start the next clip, unless disarmed."""
+        """The block came off the base: start the next clip, unless disarmed."""
         with self._cond:
             self._magnet_present = False
             if not self._armed:
@@ -147,7 +147,7 @@ class Controller:
         self._player.stop()
 
     def on_magnet_present(self) -> None:
-        """The block was pushed back in: silence, immediately."""
+        """The block went back on the base: silence, immediately."""
         with self._cond:
             self._magnet_present = True
             if not self._armed:
@@ -222,7 +222,7 @@ class Controller:
             self._play_session(clip, session)
 
     def _play_session(self, clip: Path, session: int | None) -> None:
-        """Play ``clip``, repeating it while the block stays out.
+        """Play ``clip``, repeating it while the block stays off.
 
         ``session is None`` means a one-shot: play it exactly once.
         """
