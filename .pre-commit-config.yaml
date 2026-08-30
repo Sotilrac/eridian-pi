@@ -11,8 +11,10 @@ repos:
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
-        args: [--maxkb=256]
-        exclude: ^media/
+        # 2MB clears media/amaze.gif at full quality and still catches a
+        # stray venv, build artifact or video. No exclude: a cap that
+        # exempts the one directory large files land in catches nothing.
+        args: [--maxkb=2048]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.0
