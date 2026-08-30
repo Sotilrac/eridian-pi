@@ -16,7 +16,7 @@ the two differ, this section wins and the alternatives are further down.
   Pi GND ---------------+--> MAX9744 GND
 
   Pi GPIO2/3 (I2C) ------> MAX9744 at 0x4B      volume only, never audio
-  Hall sensor GPIO24 ----> Pi                   magnet trigger
+  Hall sensor GPIO24 ----> Pi                   the pull block's magnet
   USB-C PD source -------> MAX9744 barrel jack  12V, amp only
 ```
 
@@ -26,6 +26,7 @@ the two differ, this section wins and the alternatives are further down.
 | Amp volume | I2C, digital mode, address `0x4B` |
 | Amp supply | USB-C PD trigger at 12V into the barrel jack |
 | Hall sensor | A3144-class, `VCC` on 3V3, `OUT` on GPIO24 |
+| Trigger | magnet in the block Rocky holds, sensor in the body behind it |
 | Speaker | one 4 ohm 10W, on the amp's left channel |
 | `SHDN` | not wired; the output stage hisses between clips |
 
@@ -44,7 +45,7 @@ the HDMI codec, which is why the signal has to be manufactured somehow.
 | Adafruit MAX9744 20W class-D amp (#1752) | 4.5-14V, I2C volume at `0x4B` |
 | An audio path out of the Pi | pick one of three, see below |
 | Digital hall effect sensor | A3144, US5881 or DRV5032, see below |
-| Neodymium disc magnet | in the base or lid |
+| Neodymium disc magnet | in the `Pull me!!! Statement` block |
 | 4 ohm 10W speaker | into the amp's terminal block |
 | 220 ohm resistor, 44nF ceramic | the PWM filter, one channel |
 | USB-C PD trigger board, fixed 12V | amp supply, see the power section |
@@ -429,10 +430,11 @@ The output transistor only ever pulls the line down, so whichever rail powers
 the sensor, the GPIO never sees more than 3.3V. This is safe either way.
 
 This figurine runs its sensor from 3V3 and it triggers reliably at the
-distance the magnet sits. Under-spec hall parts lose sensitivity before they
-stop working outright, so if triggering ever gets unreliable, particularly
-with a weak magnet or a wider gap, moving `VCC` to pin 2 or 4 is the first
-thing to try and needs no change in software.
+distance the magnet sits at when the block is pushed in. Under-spec hall
+parts lose sensitivity before they stop working outright, so if triggering
+ever gets unreliable, particularly with a weak magnet or a wider gap, moving
+`VCC` to pin 2 or 4 is the first thing to try and needs no change in
+software.
 
 Variations:
 
@@ -446,12 +448,13 @@ Variations:
 ### Polarity
 
 With a magnet present the output pulls LOW; with the magnet gone the internal
-pull-up takes it HIGH. The service reads LOW as "seated" and HIGH as
-"lifted".
+pull-up takes it HIGH. The service reads LOW as "block seated" and HIGH as
+"block pulled".
 
-If Rocky talks while seated and falls silent when lifted, the sensor or the
-magnet's pole is the other way round. Do not rewire anything, set
-`magnet_present_is_low = false` in `/etc/rocky/config.toml` and restart.
+If Rocky talks with the block pushed in and falls silent when it is pulled,
+the sensor or the magnet's pole is the other way round. Do not rewire
+anything, set `magnet_present_is_low = false` in `/etc/rocky/config.toml`
+and restart.
 
 Unipolar halls like the A3144 respond to one magnetic pole only. If nothing
 triggers at all, flip the magnet over before suspecting the wiring.
@@ -467,9 +470,9 @@ curl -sX POST http://<host>:8080/api/arm -H 'content-type: application/json' \
 ```
 
 While disarmed the sensor is still read and still reported in `/api/state`,
-but lifting Rocky does nothing. Manual triggers and per-clip previews keep
-working, which makes this the setting to use while handling the figurine or
-working on the shell. The state survives a restart.
+but pulling the block does nothing. Manual triggers and per-clip previews
+keep working, which makes this the setting to use while handling the figurine
+or working on the shell. The state survives a restart.
 
 ## Boot configuration
 
@@ -533,7 +536,7 @@ make state         # magnet, armed, volume, amp_online
 | Volume back at full scale after reboot | `alsactl store` never run |
 | Hiss between clips | wire `SHDN` to GPIO27 and set `shutdown_pin` |
 | Distortion at high volume | lower `max_volume`, or drop the supply to 9V |
-| Talks when seated, quiet when lifted | set `magnet_present_is_low = false` |
-| Lifting does nothing at all | the trigger is disarmed; check the toggle or `/api/state` |
+| Talks with the block in, quiet when pulled | set `magnet_present_is_low = false` |
+| Pulling the block does nothing at all | the trigger is disarmed; check the toggle or `/api/state` |
 | Never triggers, armed or not | flip the magnet over (unipolar sensors need one pole) |
 | Retriggers on a knock | raise `bounce_seconds` |

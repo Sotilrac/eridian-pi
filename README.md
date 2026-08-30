@@ -1,12 +1,12 @@
 # Rocky Vox
 
-A talking *Project Hail Mary* figurine. Lift Rocky off his base and he says
-something; put him back and he stops mid-word; lift him again and he says
-something else.
+A talking *Project Hail Mary* figurine. Rocky holds a block labelled
+`Pull me!!! Statement`. Pull it and he says something; push it back and he
+stops mid-word; pull it again and he says something else.
 
 Inside the shell: a Raspberry Pi Zero W, a MAX9744 20W class-D amplifier on a
 12V USB-C PD supply, a 4 ohm speaker and a hall effect sensor watching a
-magnet in the base. New lines are added over the LAN, either by uploading
+magnet in the block. New lines are added over the LAN, either by uploading
 audio or by typing text for the on-board synthesiser.
 
 ```
@@ -25,10 +25,10 @@ are each one provisioning flag away. See
 
 | Event | Response |
 |---|---|
-| Magnet leaves | draw the next clip from the shuffle bag and play it |
-| Magnet still away | when the clip ends, pause a second, replay the same clip |
-| Magnet returns | stop immediately, mid-word |
-| Magnet leaves again | a *different* clip |
+| Block pulled, magnet leaves | draw the next clip from the shuffle bag and play it |
+| Block still out | when the clip ends, pause a second, replay the same clip |
+| Block pushed back | stop immediately, mid-word |
+| Block pulled again | a *different* clip |
 
 The shuffle bag plays every clip once before any clip plays twice, and never
 repeats across a reshuffle. The built-in clip is locked into the rotation and
@@ -51,8 +51,8 @@ procedure is in [docs/SETUP.md](docs/SETUP.md).
 
 `http://<hostname>.local:8080`, open on the LAN. Live status, a 64-segment
 volume bar mirroring the amp's 64 hardware steps, drag-and-drop upload, text
-to speech, per-clip audition, a trigger button for testing without a magnet,
-a toggle that disarms the magnet so the figurine can be handled in silence,
+to speech, per-clip audition, a trigger button for testing without touching
+the block, a toggle that disarms it so the figurine can be handled in silence,
 and a collapsed panel documenting the API behind all of it. Volume and armed
 state are both persisted, because the figurine gets unplugged rather than
 shut down.

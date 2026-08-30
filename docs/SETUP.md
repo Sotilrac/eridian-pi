@@ -88,21 +88,21 @@ lists the usual causes.
 
 ```
 make status                       # active (running)
-make trigger                      # a clip plays with no magnet involved
+make trigger                      # a clip plays without touching the block
 make volume V=20                  # audibly quieter
 make open                         # the control panel
 ```
 
-Then the real thing, with the magnet:
+Then the real thing, with the block Rocky holds:
 
 | Do this | Expect |
 |---|---|
-| Lift Rocky off the base | a clip starts |
-| Keep him lifted | the same clip repeats, one second apart |
-| Set him down | silence, immediately, mid-word |
-| Lift him again | a *different* clip |
+| Pull the `Pull me!!! Statement` block | a clip starts |
+| Leave it out | the same clip repeats, one second apart |
+| Push it back in | silence, immediately, mid-word |
+| Pull it again | a *different* clip |
 | Repeat until every clip has played | no clip repeats until all have |
-| Turn off the magnet toggle, then lift | nothing; manual trigger still works |
+| Turn off the magnet toggle, then pull | nothing; manual trigger still works |
 
 ## 6. Add clips
 
@@ -114,7 +114,7 @@ ways to add a clip, and both land in the same shuffle bag:
   clip does not vanish next to a loud one. That takes 5-15 seconds on a Zero
   W; the row shows `PROCESSING` until it is done. All the CPU cost is paid
   here so that playback is a bare PCM push and a clip starts the instant the
-  magnet leaves.
+  block comes out.
 - **Synthesize** - type a line and press the button. There is one voice, a
   plain formant translator, because Rocky speaks through a translator box in
   the book and a formant synthesiser is the right instrument rather than a
@@ -127,8 +127,8 @@ refuses to delete it.
 ## 7. The rest of the control panel
 
 Beside the volume bar is a toggle labelled `Magnet trigger`. Switching it off
-leaves the sensor being read and reported, but lifting Rocky no longer starts
-anything, so the figurine can be handled or worked on without it talking.
+leaves the sensor being read and reported, but pulling the block no longer
+starts anything, so the figurine can be handled or worked on in silence.
 Manual triggers and per-clip previews are unaffected. Both the volume and the
 armed state are saved a couple of seconds after they change, so they survive
 the figurine being unplugged rather than shut down.
@@ -167,7 +167,7 @@ survive a re-run. The ones worth knowing:
 | `sensor_pin` | `24` | BCM pin the hall sensor's output is on |
 | `magnet_present_is_low` | `true` | flip if the trigger is inverted |
 | `bounce_seconds` | `0.05` | raise if a knock retriggers it |
-| `repeat_gap_seconds` | `1.0` | pause between repeats while lifted |
+| `repeat_gap_seconds` | `1.0` | pause between repeats while the block is out |
 | `mono_output` | `true` | sum L+R into both channels for a single speaker |
 | `max_volume` | `45` | ceiling on the amp's 0-63 scale |
 | `shutdown_pin` | unset | set to `27` once `SHDN` is wired |

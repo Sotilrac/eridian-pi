@@ -1,13 +1,16 @@
 """The trigger state machine.
 
+Rocky holds a block labelled "Pull me!!! Statement" with a magnet in it, and
+the hall sensor sits in the body behind where it seats.
+
   * magnet ABSENT edge  -> draw the next clip from the shuffle bag, play it
   * still ABSENT        -> after it ends, pause, then replay *the same* clip
   * magnet PRESENT edge -> stop immediately, go quiet
   * next ABSENT edge    -> draw a *new* clip and start over
 
 The gap between repeats waits on the same event that the sensor callbacks
-signal, so putting the figurine back down during that gap is honoured at once
-rather than up to a second later.
+signal, so pushing the block back during that gap is honoured at once rather
+than up to a second later.
 """
 
 from __future__ import annotations
@@ -49,14 +52,14 @@ class Controller:
         self._magnet_present = magnet_present
         #: While disarmed the sensor is read and reported but never acted on,
         #: so the figurine can be handled without talking. Manual triggers and
-        #: previews still work: disarming silences the magnet, not the device.
+        #: previews still work: disarming silences the block, not the device.
         self._armed = armed
         #: Bumped on every absent edge. The worker compares it to the value it
-        #: started a session with, which is how "magnet came back and left
-        #: again" becomes "advance to the next clip".
+        #: started a session with, which is how "block went back in and came
+        #: out again" becomes "advance to the next clip".
         self._generation = 0
         #: The generation the worker has already taken a turn on. A session
-        #: that ends while the magnet is still away -- because the clip could
+        #: that ends while the block is still out -- because the clip could
         #: not be played, or the library is empty -- must stay quiet until a
         #: fresh edge arrives rather than grabbing the next clip.
         self._served = 0
@@ -122,8 +125,8 @@ class Controller:
     def sync_magnet(self, present: bool) -> None:
         """Adopt the sensor's reading at startup without treating it as an edge.
 
-        A Pi that boots while Rocky is lifted should report him lifted, but
-        must not start talking thirty seconds after power-on.
+        A Pi that boots with the block already pulled should report it out,
+        but must not start talking thirty seconds after power-on.
         """
         with self._cond:
             self._magnet_present = present
@@ -131,7 +134,7 @@ class Controller:
 
     # -- sensor edges ----------------------------------------------------
     def on_magnet_absent(self) -> None:
-        """Rocky was lifted: start the next clip, unless disarmed."""
+        """The block was pulled: start the next clip, unless disarmed."""
         with self._cond:
             self._magnet_present = False
             if not self._armed:
@@ -144,7 +147,7 @@ class Controller:
         self._player.stop()
 
     def on_magnet_present(self) -> None:
-        """Rocky was set back down: silence, immediately."""
+        """The block was pushed back in: silence, immediately."""
         with self._cond:
             self._magnet_present = True
             if not self._armed:
@@ -165,7 +168,7 @@ class Controller:
     def trigger_once(self) -> Path | None:
         """Draw and play the next clip once, as if the magnet had left.
 
-        Unlike a real lift there is no magnet to put back, so this plays a
+        Unlike a real pull there is no magnet to put back, so this plays a
         single clip rather than repeating. Handy for testing with no hardware.
         """
         clip = self._bag.draw()
@@ -219,7 +222,7 @@ class Controller:
             self._play_session(clip, session)
 
     def _play_session(self, clip: Path, session: int | None) -> None:
-        """Play ``clip``, repeating it while the magnet stays away.
+        """Play ``clip``, repeating it while the block stays out.
 
         ``session is None`` means a one-shot: play it exactly once.
         """

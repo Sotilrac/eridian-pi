@@ -29,7 +29,7 @@ class HallSensor:
     """Wraps a gpiozero ``Button`` and reports magnet edges.
 
     The initial state is read but deliberately *not* fired as an edge: a Pi
-    that boots while the figurine is lifted should come up quiet rather than
+    that boots with the block already pulled should come up quiet rather than
     launching into a clip 30 seconds after power-on.
     """
 

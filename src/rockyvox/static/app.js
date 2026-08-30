@@ -273,7 +273,7 @@
 
   function renderState(state) {
     setStat("stat-magnet", state.magnet_present ? "is-live" : "is-warm",
-      state.magnet_present ? "Seated" : "Lifted");
+      state.magnet_present ? "Seated" : "Pulled");
     paintArm(state.armed);
     setStat("stat-playback", state.playing ? "is-live" : "", state.playing ? "Speaking" : "Silent");
     setStat("stat-amp", state.amp_online ? "is-live" : "is-alert",

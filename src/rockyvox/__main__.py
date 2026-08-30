@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         bounce_seconds=config.bounce_seconds,
     )
 
-    # Report the real position without treating power-on as a lift.
+    # Report the real position without treating power-on as a pull.
     controller.sync_magnet(sensor.magnet_present)
 
     clip_count = len(library.clips())
